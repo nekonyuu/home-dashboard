@@ -1,12 +1,12 @@
 # LG ThinQ : découverte et plan d'intégration
 
-Statut : **brouillon de découverte, rien d'implémenté.** Ne modifie pas `PLAN.md` (réservé au propriétaire).
+Statut : **sonde exécutée (§6), adaptateur non commencé.** Ne modifie pas `PLAN.md` (réservé au propriétaire).
 Appareils visés : une machine à laver et un frigo LG. Découverte faite par recherche web uniquement, **aucun appel réel**.
 
 ## 1. Renommage du dépôt en `home-dashboard`
 
-À faire par le propriétaire sur GitHub (Settings → General → Repository name). Effets de bord à traiter ensuite dans le code :
-- image `ghcr.io/nekonyuu/atlantic-dashboard` (CI `.github/workflows/ci.yml`, `docker-compose.yml`, variable `PAC_IMAGE`) ; le NAS devra pointer vers la nouvelle image ;
+**Fait** : dépôt renommé par le propriétaire, références à l'image ghcr, README, CLAUDE.md et remote mises à jour. Reste côté NAS : pointer `PAC_IMAGE` vers `ghcr.io/nekonyuu/home-dashboard` (et vérifier la visibilité privée du nouveau paquet). Rappel des effets de bord :
+- image ancienne `ghcr.io/nekonyuu/atlantic-dashboard` (CI `.github/workflows/ci.yml`, `docker-compose.yml`, variable `PAC_IMAGE`) ; le NAS devra pointer vers la nouvelle image ;
 - `README.md`, `CLAUDE.md`, nom du paquet backend s'il porte l'ancien nom ;
 - `CLAUDE.md` mentionne Magellan comme seule source : à reformuler pour un projet multi-fournisseurs.
 
@@ -59,6 +59,30 @@ température réelle ; lecture seule vs écriture non documentée dans le README
 - Conserver la consigne seule ou trouver une température mesurée du frigo.
 - Fréquence de collecte et politique d'erreur (PAT révoqué = arrêt définitif, à l'image de `CredentialsRejected`).
 - Commandes éventuelles : hors périmètre tant que la lecture n'est pas stabilisée.
+
+## 6. Résultats de la sonde (étape 1 faite)
+
+Sonde `backend/scripts/discover_thinq.py` exécutée avec le PAT ; fixture anonymisée `backend/tests/fixtures/thinq_anonymized.json`
+(à relire, non commitée). Région `eic` (FR).
+
+| Appareil | Modèle | Profil | État | Énergie |
+|---|---|---|---|---|
+| Lave-linge `DEVICE_WASHER` | `F_R7_D___W.A__QEUK` | ok | 1222 « Not connected device » | 1221 non supporté |
+| Lave-vaisselle `DEVICE_DISH_WASHER` | `D0200` | ok | 1222 | 1221 |
+| Frigo `DEVICE_REFRIGERATOR` | `1REB1GLPX1___` | ok | ok | 1221 |
+
+- **Frigo** : `temperature` (FRIDGE 3 °C, plage 1 à 7 ; FREEZER −18 °C, plage −23 à −15, lecture/écriture), `temperatureInUnits`,
+  `doorStatus.doorState` (OPEN/CLOSE), `refrigeration.expressMode`, `ecoFriendly.ecoFriendlyMode`. Pas de filtre à eau ni de sabbat.
+  Consignes seulement, pas de température mesurée.
+- **Lave-linge** (profil) : `runState.currentState`, `operation.washerOperationMode`, `detergent`, `remoteControlEnable`,
+  `timer` (remain/total/relativeStop), `location`, `cycle.cycleCount`.
+- **Lave-vaisselle** (profil, hors périmètre initial) : `runState`, `doorStatus`, `timer`, `dishWashingCourse`, `dishWashingStatus.rinseRefill`, `preference`.
+- **Énergie** : aucun profil énergie (1221) sur les trois appareils : pas de consommation côté LG.
+- Les états des deux lave-* sont en 1222 (appareil hors ligne côté LG lors de la sonde).
+
+**À faire ensuite** (reporté par le propriétaire) : relancer la sonde avec lave-linge et lave-vaisselle allumés pour obtenir de vrais
+états, relire la fixture, puis trancher : lave-vaisselle dans le périmètre ? historique des ouvertures de porte du frigo ?
+Ensuite seulement : étapes 3 à 5 du §4.
 
 ## Sources
 
