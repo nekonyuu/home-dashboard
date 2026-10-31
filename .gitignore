@@ -14,3 +14,4 @@ frontend/dist/
 .DS_Store
 backend/discover_magellan_output.json
 backend/backup/
+backend/discover_thinq_output.json

@@ -1,7 +1,7 @@
 services:
   pac-dashboard:
     # Image publiée par GitHub Actions (ghcr.io/<compte>/<dépôt>) ; PAC_IMAGE dans .env pour la fixer.
-    image: ${PAC_IMAGE:-ghcr.io/nekonyuu/atlantic-dashboard:latest}
+    image: ${PAC_IMAGE:-ghcr.io/nekonyuu/home-dashboard:latest}
     # build: .                      # alternative : construire sur place
     container_name: pac-dashboard
     restart: unless-stopped

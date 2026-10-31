@@ -1,13 +1,15 @@
 # CLAUDE.md
 
-Dashboard perso pour PAC Atlantic **Alfea Excellia S** + ballon ECS (thermostat Navilink 228, sans box), données
-lues sur le cloud **Magellan** d'Atlantic (`apis.groupe-atlantic.com`). Le compte n'existe **pas** chez Overkiz :
+Dashboard perso de la maison (dépôt `home-dashboard`, multi-fournisseurs). Source principale : PAC Atlantic
+**Alfea Excellia S** + ballon ECS (thermostat Navilink 228, sans box), données lues sur le cloud **Magellan** d'Atlantic (`apis.groupe-atlantic.com`). Le compte n'existe **pas** chez Overkiz :
 `pyoverkiz` a été retiré, ne pas le réintroduire (`docs/phase0-findings.md` §0).
 **`PLAN.md` (révision 3) est la référence : ne le modifier qu'avec l'accord explicite du propriétaire.**
 
 ## État
 Phases 0 à 5 terminées (`PLAN.md` §12) : collecte, API, front, image Docker publiée par la CI, en service sur le NAS.
-Phase 6 (commandes) optionnelle. S'arrêter aux phases marquées ⏸ et montrer le résultat.
+Phase 6 (commandes) optionnelle.
+Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/discover_thinq.py` faite, adaptateur
+**pas commencé** ; état et suite dans `docs/thinq-discovery.md` §6. S'arrêter aux phases marquées ⏸ et montrer le résultat.
 
 ## Environnement et commandes
 - Outils gérés par **mise** (`mise.toml` : Python 3.12, Node 22, uv) : `mise install` à la racine.
@@ -81,7 +83,7 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 ## Déploiement
 - Image unique (front compilé servi par FastAPI) : `Dockerfile` multi-stage, non-root uid 1000, healthcheck Python.
 - CI `.github/workflows/ci.yml` : lint + tests backend/frontend, puis image `linux/amd64` + `linux/arm64` publiée sur
-  `ghcr.io/nekonyuu/atlantic-dashboard` depuis `main` (`latest`, `sha-…`) et les tags `vX.Y.Z`. Dépôt et image **privés**.
+  `ghcr.io/nekonyuu/home-dashboard` depuis `main` (`latest`, `sha-…`) et les tags `vX.Y.Z`. Dépôt et image **privés**.
 - NAS : `docker-compose.yml` (image via `PAC_IMAGE`), volume `/data` sur disque **local** (jamais SMB/NFS), dossier
   appartenant à l'UID:GID de `user:` (sinon « Stockage inaccessible » au démarrage). Détails dans `README.md`.
 

@@ -25,7 +25,7 @@ plus lisible que l'application Cozytouch, avec un **historique durable**.
 
 ## Déploiement sur le NAS
 
-L'image est publiée par GitHub Actions sur `ghcr.io/nekonyuu/atlantic-dashboard` (amd64 et arm64).
+L'image est publiée par GitHub Actions sur `ghcr.io/nekonyuu/home-dashboard` (amd64 et arm64).
 
 1. **Dossier de données** sur un disque **local** du NAS (jamais un montage SMB/NFS : SQLite en WAL y est
    peu fiable), par exemple `/volume1/docker/pac-dashboard`. Le conteneur doit pouvoir écrire dans le
@@ -39,7 +39,7 @@ L'image est publiée par GitHub Actions sur `ghcr.io/nekonyuu/atlantic-dashboard
 2. **Fichiers** : copiez `docker-compose.yml` et `.env.example` dans un dossier du NAS, renommez
    `.env.example` en `.env`, renseignez vos identifiants Cozytouch, puis `chmod 600 .env`.
 3. **Accès à l'image** : les paquets GHCR sont **privés** par défaut. Soit vous rendez le paquet public
-   (GitHub → Packages → `atlantic-dashboard` → Package settings → Change visibility), soit vous vous
+   (GitHub → Packages → `home-dashboard` → Package settings → Change visibility), soit vous vous
    connectez une fois depuis le NAS avec un jeton GitHub ayant le droit `read:packages` :
    ```sh
    echo "<jeton>" | docker login ghcr.io -u nekonyuu --password-stdin
@@ -68,7 +68,7 @@ fichier d'environnement, `TZ=Europe/Paris`, redémarrage « sauf arrêt »).
 | `RETENTION_DAYS_RAW` | purge des points bruts après agrégation horaire (0 = jamais) | `0` |
 | `STATIC_DIR` | front compilé dans l'image | `/app/static` |
 | `LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
-| `PAC_IMAGE` | image utilisée par le compose | `ghcr.io/nekonyuu/atlantic-dashboard:latest` |
+| `PAC_IMAGE` | image utilisée par le compose | `ghcr.io/nekonyuu/home-dashboard:latest` |
 
 Le fuseau `TZ=Europe/Paris` du compose ne sert qu'aux logs : la base est en UTC et les journées sont
 calculées en `Europe/Paris` par l'application.
@@ -84,7 +84,7 @@ docker compose pull && docker compose up -d
 ```
 
 Les migrations de schéma s'appliquent automatiquement au démarrage. Pour figer une version, utilisez un
-tag publié (`PAC_IMAGE=ghcr.io/nekonyuu/atlantic-dashboard:1.2.0` ou `:sha-abc1234`) plutôt que `latest`.
+tag publié (`PAC_IMAGE=ghcr.io/nekonyuu/home-dashboard:1.2.0` ou `:sha-abc1234`) plutôt que `latest`.
 
 ## Sauvegarde et restauration
 
@@ -170,7 +170,7 @@ bibliothèque standard ; les règles de dépendance sont vérifiées par `import
 
 - à chaque push et PR : lint + tests backend (ruff, pytest, import-linter) et frontend (tsc, vitest, build) ;
 - puis construction de l'image `linux/amd64` + `linux/arm64` ;
-- publication sur `ghcr.io/nekonyuu/atlantic-dashboard` depuis `main` (`latest`, `sha-xxxxxxx`) et
+- publication sur `ghcr.io/nekonyuu/home-dashboard` depuis `main` (`latest`, `sha-xxxxxxx`) et
   depuis les tags `vX.Y.Z` (`X.Y.Z`, `X.Y`) ; les PR construisent sans publier.
 
 Publier une version :

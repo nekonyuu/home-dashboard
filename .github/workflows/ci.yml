@@ -1,5 +1,5 @@
 # CI : lint + tests à chaque push/PR ; image Docker publiée sur GHCR depuis main et les tags v*.
-# Image : ghcr.io/<propriétaire>/<dépôt> (ex. ghcr.io/nekonyuu/atlantic-dashboard).
+# Image : ghcr.io/<propriétaire>/<dépôt> (ex. ghcr.io/nekonyuu/home-dashboard).
 name: CI
 
 on:
