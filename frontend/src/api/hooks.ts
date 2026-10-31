@@ -38,3 +38,6 @@ export function useSeries(requests: SeriesRequest[], range: Range) {
 
 export const useEnergy = (from: string, to: string) =>
   useQuery({ queryKey: ["energy", from, to], queryFn: () => api.energy(from, to) });
+
+export const useCycles = (from: number, to: number) =>
+  useQuery({ queryKey: ["cycles", from, to], queryFn: () => api.cycles(from, to), placeholderData: keepPreviousData });

@@ -1,4 +1,4 @@
-import type { BucketSize, EnergyDay, Equipment, Gap, Health, Latest, Series } from "./types";
+import type { BucketSize, Cycle, EnergyDay, Equipment, Gap, Health, Latest, Series } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -33,5 +33,6 @@ export const api = {
   series: (equipment: string, metric: string, from: number, to: number, bucket?: BucketSize) =>
     get<Series>("/api/series", { equipment, metric, from, to, bucket }),
   gaps: (from: number, to: number) => get<Gap[]>("/api/gaps", { from, to }),
+  cycles: (from: number, to: number) => get<Cycle[]>("/api/cycles", { from, to }),
   energy: (from: string, to: string) => get<EnergyDay[]>("/api/energy", { from, to }),
 };

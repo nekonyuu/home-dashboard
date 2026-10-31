@@ -1,7 +1,8 @@
 import { useLatest, useSeries } from "../api/hooks";
 import { ChartCard } from "../components/charts";
+import { CyclesCard } from "../components/CyclesCard";
 import { IconClock, IconDrop, IconThermo } from "../components/icons";
-import { Card, ErrorState, PageHeader, Segmented, Tile } from "../components/ui";
+import { ErrorState, PageHeader, Segmented, Tile } from "../components/ui";
 import { findMetric, indexLatest } from "../lib/latest";
 import { usePreset } from "../lib/usePreset";
 import { useTrends } from "../lib/useTrends";
@@ -47,16 +48,7 @@ export function Dhw() {
           loading={loading}
           height={300}
         />
-        <Card title="Cycles de chauffe" subtitle="Durée et fréquence des montées en température">
-          <div className="empty-state">
-            <IconClock size={28} />
-            <strong style={{ color: "var(--text-2)" }}>Pas encore disponible</strong>
-            <span style={{ maxWidth: 520 }}>
-              La détection des cycles s'appuiera sur l'état de production du ballon. Elle sera ajoutée quand
-              quelques jours de collecte auront confirmé quelle mesure les signale de façon fiable.
-            </span>
-          </div>
-        </Card>
+        <CyclesCard />
       </div>
     </>
   );

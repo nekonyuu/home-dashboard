@@ -66,7 +66,7 @@ Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/
 
 ## API HTTP (lecture seule, `backend/app/adapters/inbound/http/routes.py`)
 `/api/health` (toujours 200, état dans le corps), `/api/equipment`, `/api/latest`, `/api/series` (bucket 5m/1h/1d auto),
-`/api/gaps`, `/api/energy`. Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
+`/api/gaps`, `/api/energy`, `/api/cycles`. Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
 jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)
@@ -97,7 +97,15 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 - Base en UTC (epoch s) ; journées calculées avec `zoneinfo("Europe/Paris")`.
 - Un seul writer SQLite (un seul worker uvicorn) ; pas d'Alembic, pas de framework DI, pas de dépendance non justifiée.
 
+## Cycles de chauffe ECS
+- Source : `dhw_status` (capacité 99, vanne 3 voies : 0 = chauffage, 1 = ECS). Une chauffe = de la bascule à 1 au retour à 0
+  (14 cycles de 8 à 58 min sur 13 jours, surtout vers 14 h). `CycleDetector` (domaine) les dérive à la demande
+  (`GetCycles`, `/api/cycles`), rien n'est stocké. Instants = dates fournisseur : un trou ne les fausse pas.
+- Énergie d'un cycle = delta du compteur 59 de l'avant-début à +30 min après la fin (le compteur se met à jour après la
+  bascule), vide si un trou recouvre le cycle. Peut être surestimée si le cloud n'a pas publié un cycle précédent
+  (cas du 26/10 : bascule et compteur jamais reçus, énergie rattrapée d'un coup le 27/10).
+- Limite : un cycle entièrement manqué par le cloud n'apparaît pas (aucun cycle déduit de la température).
+
 ## Points ouverts
 - Unité des compteurs 57/59 (Wh supposé) : comparer leurs deltas aux consommations journalières.
-- Détection des cycles de chauffe ECS (`CycleDetector`, `/api/events`) : choisir la mesure après quelques jours de collecte.
 - Libellés des mesures vides via l'API tant qu'aucun poll n'a réussi depuis le démarrage (`MetricCatalog` sans réseau).

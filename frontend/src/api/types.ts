@@ -95,3 +95,13 @@ export interface EnergyDay {
   kwh: number;
   cost: number | null;
 }
+
+export interface Cycle {
+  start: number;
+  end: number | null;
+  duration_seconds: number | null;
+  ongoing: boolean;
+  start_temperature: number | null;
+  end_temperature: number | null;
+  energy_wh: number | null;
+}
