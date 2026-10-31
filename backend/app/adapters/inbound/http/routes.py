@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.adapters.inbound.http.deps import HttpApi, api
 from app.adapters.inbound.http.schemas import (
+    CycleOut,
     EnergyOut,
     EquipmentOut,
     ErrorsOut,
@@ -33,6 +34,7 @@ DAY = 86400
 # durée maximale demandable par taille de bucket (jours)
 MAX_RANGE_DAYS = {BucketSize.FIVE_MINUTES: 7, BucketSize.HOUR: 400, BucketSize.DAY: 3660}
 MAX_ENERGY_DAYS = 3660
+MAX_CYCLE_DAYS = 400
 
 Api = Annotated[HttpApi, Depends(api)]
 
@@ -266,4 +268,28 @@ async def energy(
     return [
         EnergyOut(day=d.day.isoformat(), category=d.category, tariff=str(d.tariff), kwh=d.kwh, cost=d.cost)
         for d in await a.get_energy.run(since, until)
+    ]
+
+
+@router.get("/cycles", response_model=list[CycleOut])
+async def cycles(
+    a: Api, from_: Annotated[str | None, Query(alias="from")] = None, to: str | None = None
+) -> list[CycleOut]:
+    end = parse_epoch(to, "to", a.clock.now().epoch)
+    start = parse_epoch(from_, "from", end - 30 * DAY)
+    if start >= end:
+        raise bad_request("« from » doit être strictement antérieur à « to »")
+    if end - start > MAX_CYCLE_DAYS * DAY:
+        raise bad_request(f"période trop longue (maximum {MAX_CYCLE_DAYS} jours)")
+    return [
+        CycleOut(
+            start=c.start.epoch,
+            end=c.end.epoch if c.end else None,
+            duration_seconds=c.duration,
+            ongoing=c.ongoing,
+            start_temperature=c.start_temperature,
+            end_temperature=c.end_temperature,
+            energy_wh=c.energy_wh,
+        )
+        for c in await a.get_cycles.run(Instant(start), Instant(end))
     ]

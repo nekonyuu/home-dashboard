@@ -23,6 +23,8 @@ from app.adapters.outbound.fake import (
 from app.adapters.outbound.system import FixedClock
 from app.application.ports import MetricInfo
 from app.application.usecases.queries import (
+    CycleSources,
+    GetCycles,
     GetEnergy,
     GetEquipment,
     GetGaps,
@@ -49,6 +51,7 @@ from tests.builders import COUNTER, DHW, TEMP, m, paris
 INTERVAL = 300
 NOW = paris(2026, 10, 18, 12)
 MODE = MetricKey("dhw_mode")
+STATUS = MetricKey("dhw_status")
 
 
 class World:
@@ -92,6 +95,14 @@ class World:
             ),
             get_gaps=GetGaps(self.gaps, self.poll_log, self.clock, detector),
             get_energy=GetEnergy(self.energy),
+            get_cycles=GetCycles(
+                sources=CycleSources(status=(DHW, STATUS), temperature=(DHW, TEMP), energy=(DHW, COUNTER)),
+                measurements=self.measurements,
+                gaps=self.gaps,
+                poll_log=self.poll_log,
+                clock=self.clock,
+                gap_detector=detector,
+            ),
             get_metrics=GetMetrics(self.catalog),
             scheduler_state=lambda: self.state,
             clock=self.clock,
@@ -370,3 +381,35 @@ def test_spa_missing_dir_does_nothing(world, tmp_path):
     c = TestClient(app)
     assert c.get("/").status_code == 404
     assert c.get("/api/health").status_code == 200
+
+
+def test_cycles_from_valve_transitions(world, client):
+    t = NOW.epoch - 7200
+    run(
+        world.measurements.append(
+            [
+                m(t - 600, 40.0),
+                m(t - 600, 1000, key=COUNTER),
+                m(t, 1, key=STATUS),
+                m(t + 1500, 0, key=STATUS),
+                m(t + 1700, 55.0),
+                m(t + 1700, 2500, key=COUNTER),
+            ]
+        )
+    )
+    [c] = client.get("/api/cycles", params={"from": t - 3600, "to": NOW.epoch}).json()
+    assert c == {
+        "start": t,
+        "end": t + 1500,
+        "duration_seconds": 1500,
+        "ongoing": False,
+        "start_temperature": 40.0,
+        "end_temperature": 55.0,
+        "energy_wh": 1500.0,
+    }
+
+
+def test_cycles_validation_and_empty(world, client):
+    assert client.get("/api/cycles").json() == []
+    for bad in ({"from": "x"}, {"from": 10, "to": 5}, {"from": 0, "to": 10**9}):
+        assert client.get("/api/cycles", params=bad).status_code == 400

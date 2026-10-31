@@ -66,12 +66,23 @@ def synthetic(now: int, gap: tuple[int, int]) -> list[Measurement]:
             temp = min(temp + 3.2, 55.5) if 1 <= hour < 4 else max(temp - rnd.uniform(0.15, 0.6), 41.0)
             out.append(_m("dhw", "dhw_temperature", t, round(temp, 2), "°C"))
         t += 1200
+    # vanne 3 voies (1 = ECS) pendant la chauffe nocturne + compteur d'énergie ECS (Wh) qui monte pendant la chauffe
+    counter = 150_000.0
+    day = (start // DAY + 1) * DAY
+    while day + 4 * 3600 < now - 3600:
+        if not (gap[0] <= day + 3600 < gap[1]):
+            out.append(_m("dhw", "dhw_status", day + 3600, 1, None))
+            for k in range(1, 7):
+                counter += rnd.uniform(250, 450)
+                out.append(_m("heat_pump", "energy_dhw_cumulative", day + 3600 + k * 1800, round(counter), "Wh"))
+            out.append(_m("dhw", "dhw_status", day + 4 * 3600, 0, None))
+        day += DAY
     for eq, key, value in (("dhw", "dhw_setpoint", 55.0), ("room_1", "room_setpoint", 19.0), ("circuit_1", "flow_setpoint", 20.0)):
         out.append(_m(eq, key, start, value, "°C"))
     return out
 
 
-def _m(eq: str, key: str, t: int, v: float, unit: str) -> Measurement:
+def _m(eq: str, key: str, t: int, v: float, unit: str | None) -> Measurement:
     return Measurement(
         equipment_id=EquipmentId(eq),
         metric_key=MetricKey(key),

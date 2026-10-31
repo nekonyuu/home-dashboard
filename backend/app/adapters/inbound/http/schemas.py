@@ -113,3 +113,13 @@ class EnergyOut(BaseModel):
     tariff: str
     kwh: float
     cost: float | None
+
+
+class CycleOut(BaseModel):
+    start: int
+    end: int | None
+    duration_seconds: int | None
+    ongoing: bool
+    start_temperature: float | None
+    end_temperature: float | None
+    energy_wh: float | None

@@ -85,3 +85,27 @@ class Gap:
 
     def overlaps(self, start: Instant, end: Instant) -> bool:
         return self.start < end and start < self.end
+
+
+@dataclass(frozen=True, slots=True)
+class HeatingCycle:
+    """Une chauffe de l'eau chaude : la vanne 3 voies est restée sur « ECS » de ``start`` à ``end``.
+
+    ``end`` vaut ``None`` tant que le cycle est en cours. Les bornes sont les dates de changement données par le
+    fournisseur, donc exactes même si la bascule a eu lieu pendant un trou de collecte. ``energy_wh`` n'est
+    renseignée que si aucun trou ne recouvre le cycle (le compteur n'y est pas connu).
+    """
+
+    start: Instant
+    end: Instant | None
+    start_temperature: float | None = None
+    end_temperature: float | None = None
+    energy_wh: float | None = None
+
+    @property
+    def ongoing(self) -> bool:
+        return self.end is None
+
+    @property
+    def duration(self) -> int | None:
+        return None if self.end is None else self.end - self.start

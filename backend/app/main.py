@@ -36,6 +36,8 @@ from app.application.usecases.catch_up import CatchUp
 from app.application.usecases.collect import CollectSamples
 from app.application.usecases.purge import PurgeRaw
 from app.application.usecases.queries import (
+    CycleSources,
+    GetCycles,
     GetEnergy,
     GetEquipment,
     GetGaps,
@@ -47,6 +49,7 @@ from app.application.usecases.queries import (
 from app.config import ConfigError, Settings
 from app.domain import events
 from app.domain.services import GapDetector
+from app.domain.values import EquipmentId, MetricKey
 
 log = logging.getLogger("app")
 
@@ -79,6 +82,7 @@ class Container:
     get_series: GetSeries
     get_gaps: GetGaps
     get_energy: GetEnergy
+    get_cycles: GetCycles
     get_health: GetHealth
     get_metrics: GetMetrics
     clock: SystemClock
@@ -158,6 +162,18 @@ async def build(settings: Settings) -> Container:
         ),
         get_gaps=GetGaps(gaps, poll_log, clock, gap_detector),
         get_energy=GetEnergy(energy),
+        get_cycles=GetCycles(
+            sources=CycleSources(
+                status=(EquipmentId("dhw"), MetricKey("dhw_status")),
+                temperature=(EquipmentId("dhw"), MetricKey("dhw_temperature")),
+                energy=(EquipmentId("heat_pump"), MetricKey("energy_dhw_cumulative")),
+            ),
+            measurements=measurements,
+            gaps=gaps,
+            poll_log=poll_log,
+            clock=clock,
+            gap_detector=gap_detector,
+        ),
         get_metrics=GetMetrics(gateway),
         clock=clock,
         get_health=GetHealth(
@@ -201,6 +217,7 @@ def create_app(settings: Settings | None = None, *, start_scheduler: bool = True
             get_series=container.get_series,
             get_gaps=container.get_gaps,
             get_energy=container.get_energy,
+            get_cycles=container.get_cycles,
             get_metrics=container.get_metrics,
             scheduler_state=lambda: container.scheduler.state,
             clock=container.clock,

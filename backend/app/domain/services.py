@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from app.domain.model import Gap, GapCause
+from app.domain.model import Gap, GapCause, HeatingCycle
 from app.domain.values import (
     Bucket,
     BucketSize,
@@ -264,3 +264,105 @@ class GapDetector:
         if kinds:
             return GapCause.UNKNOWN
         return GapCause.DOWNTIME
+
+
+class CycleDetector:
+    """Détecte les cycles de chauffe de l'eau chaude à partir de la vanne 3 voies.
+
+    La vanne vaut ``ecs_value`` pendant une chauffe de l'eau chaude ; la mesure n'est enregistrée qu'à ses
+    changements, donc une paire (passage à ``ecs_value``, retour à une autre valeur) borne un cycle.
+    Les instants sont ceux du fournisseur (date du changement) : un trou de collecte ne les fausse pas, mais un
+    cycle entièrement contenu dans un trou n'est pas vu, et l'énergie d'un cycle touché par un trou n'est pas
+    calculée. Les températures et l'énergie sont lues avec une tolérance ``settle`` après la fin, car la remontée
+    de température et le compteur se mettent à jour après la bascule.
+    """
+
+    def __init__(self, ecs_value: float = 1.0, settle: int = 1800) -> None:
+        self._ecs = ecs_value
+        self._settle = settle
+
+    def detect(
+        self,
+        status: Sequence[Measurement],
+        *,
+        prior_status: Measurement | None = None,
+        temperatures: Sequence[Measurement] = (),
+        prior_temperature: Measurement | None = None,
+        energy: Sequence[Measurement] = (),
+        prior_energy: Measurement | None = None,
+        gaps: Sequence[Gap] = (),
+        window_start: Instant,
+    ) -> list[HeatingCycle]:
+        """Cycles dont le début est dans la fenêtre ou la chevauche (``window_start`` : début demandé)."""
+        readings = sorted(status, key=lambda m: m.instant)
+        spans: list[tuple[Instant, Instant | None]] = []
+        start: Instant | None = None
+        if prior_status is not None and self._is_ecs(prior_status):
+            # déjà en cours à l'ouverture de la fenêtre : début connu seulement par la mesure précédente
+            start = prior_status.instant
+        for reading in readings:
+            if self._is_ecs(reading):
+                if start is None:
+                    start = reading.instant
+                # sinon : répétition de l'état « ECS », cycle déjà ouvert
+            elif start is not None:
+                spans.append((start, reading.instant))
+                start = None
+        if start is not None:
+            spans.append((start, None))
+        cycles = []
+        for n, (begin, end) in enumerate(spans):
+            following = spans[n + 1][0] if n + 1 < len(spans) else None
+            cycles.append(
+                self._build(begin, end, following, temperatures, prior_temperature, energy, prior_energy, gaps)
+            )
+        return [c for c in cycles if c.end is None or c.end > window_start]
+
+    def _is_ecs(self, m: Measurement) -> bool:
+        return m.value.number == self._ecs
+
+    @staticmethod
+    def _hidden(gaps: Sequence[Gap], a: Instant, b: Instant) -> bool:
+        return any(g.overlaps(a, b) for g in gaps)
+
+    def _build(
+        self,
+        start: Instant,
+        end: Instant | None,
+        following: Instant | None,
+        temperatures: Sequence[Measurement],
+        prior_temperature: Measurement | None,
+        energy: Sequence[Measurement],
+        prior_energy: Measurement | None,
+        gaps: Sequence[Gap],
+    ) -> HeatingCycle:
+        horizon = None if end is None else end + self._settle
+        if horizon is not None and following is not None:
+            horizon = min(horizon, following)
+        t_start = self._value_at(temperatures, prior_temperature, start)
+        t_end = None if end is None else self._value_at(temperatures, prior_temperature, horizon or end)
+        wh = None
+        if end is not None and horizon is not None and not self._hidden(gaps, start, horizon):
+            before = self._reading_at(energy, prior_energy, start)
+            after = self._reading_at(energy, prior_energy, horizon)
+            if (
+                before is not None
+                and after is not None
+                and after.value.number is not None
+                and before.value.number is not None
+                and after.value.number >= before.value.number
+            ):
+                wh = after.value.number - before.value.number
+        return HeatingCycle(start, end, t_start, t_end, wh)
+
+    @staticmethod
+    def _reading_at(series: Sequence[Measurement], prior: Measurement | None, at: Instant) -> Measurement | None:
+        found = prior if prior is not None and prior.instant <= at else None
+        for m in series:
+            if m.instant <= at and (found is None or m.instant >= found.instant):
+                found = m
+        return found
+
+    def _value_at(self, series: Sequence[Measurement], prior: Measurement | None, at: Instant) -> float | None:
+        m = self._reading_at(series, prior, at)
+        return None if m is None else m.value.number

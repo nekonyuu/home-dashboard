@@ -18,8 +18,8 @@ from app.application.ports import (
     PollLogRepository,
     StorageStats,
 )
-from app.domain.model import Equipment, Gap
-from app.domain.services import GapDetector, SeriesAggregator
+from app.domain.model import Equipment, Gap, HeatingCycle
+from app.domain.services import CycleDetector, GapDetector, SeriesAggregator
 from app.domain.values import (
     BucketSize,
     EnergyDay,
@@ -134,6 +134,70 @@ class GetGaps:
         if ongoing is not None and ongoing.overlaps(start, end):
             gaps.append(ongoing)
         return sorted(gaps, key=lambda g: g.start)
+
+
+@dataclass(frozen=True, slots=True)
+class CycleSources:
+    """Où lire la vanne 3 voies, la température du ballon et le compteur d'énergie ECS."""
+
+    status: tuple[EquipmentId, MetricKey]
+    temperature: tuple[EquipmentId, MetricKey]
+    energy: tuple[EquipmentId, MetricKey]
+
+
+class GetCycles:
+    """Cycles de chauffe de l'eau chaude sur une période (dérivés, jamais stockés)."""
+
+    def __init__(
+        self,
+        *,
+        sources: CycleSources,
+        measurements: MeasurementRepository,
+        gaps: GapRepository,
+        poll_log: PollLogRepository,
+        clock: Clock,
+        gap_detector: GapDetector,
+        detector: CycleDetector | None = None,
+    ) -> None:
+        self._sources = sources
+        self._measurements = measurements
+        self._gaps = gaps
+        self._poll_log = poll_log
+        self._clock = clock
+        self._gap_detector = gap_detector
+        self._detector = detector or CycleDetector()
+
+    async def run(self, start: Instant, end: Instant) -> list[HeatingCycle]:
+        if end <= start:
+            raise ValueError("période vide")
+        # un cycle commencé avant la fenêtre est reconnu par la mesure précédente ; la fin et l'énergie d'un
+        # cycle proche de la fin de fenêtre demandent de lire un peu au-delà
+        read_end = end + 3600
+        gaps = await self._gaps.list(start, read_end)
+        ongoing = await _ongoing_gap(self._poll_log, self._gap_detector, self._clock.now())
+        if ongoing is not None and ongoing.overlaps(start, read_end):
+            gaps = [*gaps, ongoing]
+        series = {}
+        for name, (eq, key) in (
+            ("status", self._sources.status),
+            ("temperature", self._sources.temperature),
+            ("energy", self._sources.energy),
+        ):
+            series[name] = (
+                await self._measurements.range(eq, key, start, read_end),
+                await self._measurements.last_recorded(eq, key, start),
+            )
+        cycles = self._detector.detect(
+            series["status"][0],
+            prior_status=series["status"][1],
+            temperatures=series["temperature"][0],
+            prior_temperature=series["temperature"][1],
+            energy=series["energy"][0],
+            prior_energy=series["energy"][1],
+            gaps=gaps,
+            window_start=start,
+        )
+        return [c for c in cycles if c.start < end]
 
 
 class GetEnergy:

@@ -10,6 +10,7 @@ from fastapi import Request
 
 from app.application.ports import Clock
 from app.application.usecases.queries import (
+    GetCycles,
     GetEnergy,
     GetEquipment,
     GetGaps,
@@ -28,6 +29,7 @@ class HttpApi:
     get_series: GetSeries
     get_gaps: GetGaps
     get_energy: GetEnergy
+    get_cycles: GetCycles
     get_metrics: GetMetrics
     # renvoie un objet avec running, stopped_reason, consecutive_failures, next_delay_seconds
     scheduler_state: Callable[[], Any]
