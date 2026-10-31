@@ -41,6 +41,7 @@ class MetricSpec:
     label: str
     unit: str | None = None
     cumulative: bool = False
+    schedule: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,7 +65,12 @@ class Semantics:
         for e in raw["equipment"]:
             metrics = tuple(
                 MetricSpec(
-                    MetricKey(k), int(v["capability"]), str(v["label"]), v.get("unit"), bool(v.get("cumulative", False))
+                    MetricKey(k),
+                    int(v["capability"]),
+                    str(v["label"]),
+                    v.get("unit"),
+                    bool(v.get("cumulative", False)),
+                    bool(v.get("schedule", False)),
                 )
                 for k, v in e["metrics"].items()
             )
@@ -181,6 +187,31 @@ def parse_value(raw: Any, info: CapabilityInfo | None, unit: str | None) -> Meas
         return None
 
 
+def schedule_value(value: MeasurementValue) -> MeasurementValue | None:
+    """Programme journalier Magellan ``[[minute, °C, drapeau], ...]`` -> ``[{minute, setpoint}]`` trié.
+
+    Les cases vides (consigne nulle) sont retirées ; ``None`` si le format est inattendu.
+    """
+    if value.type is not ValueType.JSON:
+        return None
+    raw = json.loads(value.text or "null")
+    if not isinstance(raw, list):
+        return None
+    out = []
+    for entry in raw:
+        if not isinstance(entry, list) or len(entry) < 2:
+            return None
+        minute, setpoint = entry[0], entry[1]
+        if not isinstance(minute, int | float) or not isinstance(setpoint, int | float):
+            return None
+        if setpoint == 0:
+            continue
+        if not 0 <= minute < 1440:
+            return None
+        out.append({"minute": int(minute), "setpoint": float(setpoint)})
+    return MeasurementValue.of_json(sorted(out, key=lambda t: t["minute"]))
+
+
 def measurements_of(resolved: ResolvedEquipment, catalogue: Catalogue, polled_at: Instant) -> list[Measurement]:
     out = []
     for metric in resolved.spec.metrics:
@@ -190,6 +221,8 @@ def measurements_of(resolved: ResolvedEquipment, catalogue: Catalogue, polled_at
         info = catalogue.get(metric.capability)
         unit = metric.unit or (info.unit if info else None)
         value = parse_value(cap.get("value"), info, unit)
+        if value is not None and metric.schedule:
+            value = schedule_value(value)
         if value is None:
             log.warning("Valeur inattendue ignorée pour %s/%s", resolved.equipment.id, metric.key)
             continue

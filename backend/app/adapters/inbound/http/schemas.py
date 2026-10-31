@@ -123,3 +123,35 @@ class CycleOut(BaseModel):
     start_temperature: float | None
     end_temperature: float | None
     energy_wh: float | None
+
+
+class TransitionOut(BaseModel):
+    minute: int
+    setpoint: float
+
+
+class ScheduleDayOut(BaseModel):
+    weekday: int  # 0 = lundi
+    transitions: list[TransitionOut]
+
+
+class NextTransitionOut(BaseModel):
+    at: int
+    setpoint: float
+
+
+class OverrideOut(BaseModel):
+    active: bool
+    remaining_minutes: int | None
+
+
+class ScheduleOut(BaseModel):
+    equipment: str
+    mode: int | None
+    mode_display: str | None
+    days: list[ScheduleDayOut]
+    current_setpoint: float | None
+    applied_setpoint: float | None
+    next: NextTransitionOut | None
+    override: OverrideOut | None
+    updated_at: int

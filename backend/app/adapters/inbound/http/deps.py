@@ -17,6 +17,7 @@ from app.application.usecases.queries import (
     GetHealth,
     GetLatest,
     GetMetrics,
+    GetSchedule,
     GetSeries,
 )
 
@@ -31,6 +32,7 @@ class HttpApi:
     get_energy: GetEnergy
     get_cycles: GetCycles
     get_metrics: GetMetrics
+    get_schedule: GetSchedule
     # renvoie un objet avec running, stopped_reason, consecutive_failures, next_delay_seconds
     scheduler_state: Callable[[], Any]
     clock: Clock

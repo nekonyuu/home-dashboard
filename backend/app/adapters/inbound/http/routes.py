@@ -19,9 +19,14 @@ from app.adapters.inbound.http.schemas import (
     LastErrorOut,
     LatestOut,
     MetricMetaOut,
+    NextTransitionOut,
+    OverrideOut,
     PointOut,
     PollerOut,
+    ScheduleDayOut,
+    ScheduleOut,
     SeriesOut,
+    TransitionOut,
 )
 from app.application.ports import MetricInfo
 from app.domain.model import Gap
@@ -293,3 +298,38 @@ async def cycles(
         )
         for c in await a.get_cycles.run(Instant(start), Instant(end))
     ]
+
+
+@router.get("/schedule", response_model=ScheduleOut)
+async def schedule(a: Api) -> ScheduleOut:
+    view = await a.get_schedule.run()
+    if view is None:
+        raise HTTPException(status_code=404, detail="programme de chauffage pas encore reçu")
+    ctx = view.context
+    infos = {i.metric_key: i for i in await a.get_metrics.run() if i.equipment_id == view.equipment_id}
+    mode = ctx.get("setpoint_mode")
+    active = ctx.get("override_active")
+    remaining = ctx.get("override_remaining")
+    applied = ctx.get("room_setpoint")
+    state = view.state
+    return ScheduleOut(
+        equipment=str(view.equipment_id),
+        mode=int(mode.value.number) if mode and mode.value.number is not None else None,
+        mode_display=enum_label(infos.get(mode.metric_key), mode.value) if mode else None,
+        days=[
+            ScheduleDayOut(weekday=i, transitions=[TransitionOut(minute=t.minute, setpoint=t.setpoint) for t in day])
+            for i, day in enumerate(view.schedule.days)
+        ],
+        current_setpoint=state.setpoint,
+        applied_setpoint=applied.value.number if applied else None,
+        next=NextTransitionOut(at=state.next_at.epoch, setpoint=state.next_setpoint)
+        if state.next_at is not None and state.next_setpoint is not None
+        else None,
+        override=OverrideOut(
+            active=bool(active.value.number),
+            remaining_minutes=int(remaining.value.number) if remaining and remaining.value.number is not None else None,
+        )
+        if active
+        else None,
+        updated_at=view.updated_at.epoch,
+    )

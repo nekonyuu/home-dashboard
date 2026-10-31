@@ -70,3 +70,15 @@ equipment:
       thermostat_mode: {label: "Mode thermostat", capability: 181}
       setpoint_mode: {label: "Mode de consigne", capability: 184}
       heating_ongoing: {label: "Chauffe en cours", capability: 153}
+      override_active: {label: "Dérogation active", capability: 157}
+      override_remaining: {label: "Dérogation restante", capability: 159}
+      # Programme hebdomadaire du chauffage : un changement de consigne par entrée
+      # [minute depuis minuit, °C, drapeau étendu] ; entrées [0, 0, 0] = cases vides.
+      # Normalisé par mapping.py en [{minute, setpoint}] (`schedule: true`).
+      heat_schedule_monday: {label: "Programme chauffage lundi", capability: 100320, schedule: true}
+      heat_schedule_tuesday: {label: "Programme chauffage mardi", capability: 100321, schedule: true}
+      heat_schedule_wednesday: {label: "Programme chauffage mercredi", capability: 100322, schedule: true}
+      heat_schedule_thursday: {label: "Programme chauffage jeudi", capability: 100323, schedule: true}
+      heat_schedule_friday: {label: "Programme chauffage vendredi", capability: 100324, schedule: true}
+      heat_schedule_saturday: {label: "Programme chauffage samedi", capability: 100325, schedule: true}
+      heat_schedule_sunday: {label: "Programme chauffage dimanche", capability: 100326, schedule: true}

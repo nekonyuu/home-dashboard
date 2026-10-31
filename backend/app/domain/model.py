@@ -109,3 +109,49 @@ class HeatingCycle:
     @property
     def duration(self) -> int | None:
         return None if self.end is None else self.end - self.start
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduleTransition:
+    """À ``minute`` (depuis minuit, heure locale), la consigne passe à ``setpoint``."""
+
+    minute: int
+    setpoint: float
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.minute < 1440:
+            raise ValueError(f"minute hors de la journée : {self.minute}")
+
+
+@dataclass(frozen=True, slots=True)
+class WeeklySchedule:
+    """Programme hebdomadaire : ``days[0]`` = lundi ... ``days[6]`` = dimanche, transitions triées.
+
+    Avant la première transition d'un jour, la consigne est la dernière posée un jour précédent.
+    """
+
+    days: tuple[tuple[ScheduleTransition, ...], ...]
+
+    def __post_init__(self) -> None:
+        if len(self.days) != 7:
+            raise ValueError("un programme hebdomadaire compte 7 jours")
+
+    @property
+    def empty(self) -> bool:
+        return not any(self.days)
+
+    def setpoint_at(self, weekday: int, minute: int) -> float | None:
+        for back in range(8):
+            day = self.days[(weekday - back) % 7]
+            candidates = [t for t in day if back > 0 or t.minute <= minute]
+            if candidates:
+                return candidates[-1].setpoint
+        return None
+
+    def next_transition(self, weekday: int, minute: int) -> tuple[int, ScheduleTransition] | None:
+        """Prochaine transition strictement après ``minute`` : (jours d'écart, transition)."""
+        for ahead in range(8):
+            for t in self.days[(weekday + ahead) % 7]:
+                if ahead > 0 or t.minute > minute:
+                    return ahead, t
+        return None

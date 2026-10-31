@@ -41,3 +41,5 @@ export const useEnergy = (from: string, to: string) =>
 
 export const useCycles = (from: number, to: number) =>
   useQuery({ queryKey: ["cycles", from, to], queryFn: () => api.cycles(from, to), placeholderData: keepPreviousData });
+
+export const useSchedule = () => useQuery({ queryKey: ["schedule"], queryFn: api.schedule, retry: false });

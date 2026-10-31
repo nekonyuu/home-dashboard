@@ -929,3 +929,86 @@ select {
     display: none;
   }
 }
+
+/* Programme de chauffage : une ligne par groupe de jours, plages proportionnelles à la durée */
+.sched {
+  display: grid;
+  gap: 8px;
+}
+.sched-row {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.sched-day {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.sched-day.today {
+  color: var(--text);
+  font-weight: 600;
+}
+.sched-track {
+  position: relative;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--grid);
+  overflow: hidden;
+}
+.sched-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--series-3) calc(var(--k) * 1%), var(--surface));
+  border-right: 2px solid var(--surface);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.sched-seg span {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+.sched-seg.unknown {
+  background: repeating-linear-gradient(135deg, var(--gap-fill) 0 6px, var(--gap-ink) 6px 7px);
+  color: var(--text-2);
+}
+.sched-now {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+.sched-axis {
+  position: relative;
+  height: 16px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.sched-axis span {
+  white-space: nowrap;
+  position: absolute;
+  transform: translateX(-50%);
+}
+.sched-axis span:first-child {
+  transform: none;
+}
+.sched-axis span:last-child {
+  transform: translateX(-100%);
+}
+@media (max-width: 760px) {
+  .sched-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .sched-row > div:empty {
+    display: none;
+  }
+}

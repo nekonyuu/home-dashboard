@@ -105,3 +105,20 @@ export interface Cycle {
   end_temperature: number | null;
   energy_wh: number | null;
 }
+
+export interface ScheduleTransition {
+  minute: number; // minutes depuis minuit, heure de Paris
+  setpoint: number;
+}
+
+export interface Schedule {
+  equipment: string;
+  mode: number | null;
+  mode_display: string | null;
+  days: { weekday: number; transitions: ScheduleTransition[] }[]; // 0 = lundi
+  current_setpoint: number | null;
+  applied_setpoint: number | null;
+  next: { at: number; setpoint: number } | null;
+  override: { active: boolean; remaining_minutes: number | null } | null;
+  updated_at: number;
+}
