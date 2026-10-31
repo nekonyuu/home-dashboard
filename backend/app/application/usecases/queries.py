@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from collections.abc import Collection
 from dataclasses import dataclass, field
@@ -18,8 +19,15 @@ from app.application.ports import (
     PollLogRepository,
     StorageStats,
 )
-from app.domain.model import Equipment, Gap, HeatingCycle
-from app.domain.services import CycleDetector, GapDetector, SeriesAggregator
+from app.domain.model import Equipment, Gap, HeatingCycle, WeeklySchedule
+from app.domain.services import (
+    CycleDetector,
+    GapDetector,
+    ScheduleState,
+    SeriesAggregator,
+    parse_transitions,
+    schedule_state,
+)
 from app.domain.values import (
     BucketSize,
     EnergyDay,
@@ -273,3 +281,47 @@ async def _ongoing_gap(poll_log: PollLogRepository, detector: GapDetector, now: 
         return None
     failures = [o for o in await poll_log.since(last.at) if not o.ok]
     return detector.ongoing(last.at, now, failures)
+
+
+SCHEDULE_DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduleView:
+    equipment_id: EquipmentId
+    schedule: WeeklySchedule
+    state: ScheduleState
+    updated_at: Instant
+    # dernières mesures utiles à l'affichage (mode de consigne, dérogation), absentes si jamais reçues
+    context: dict[str, Measurement] = field(default_factory=dict)
+
+
+class GetSchedule:
+    """Programme de chauffage en place (dernière version reçue), consigne programmée et prochain changement."""
+
+    PREFIX = "heat_schedule_"
+    CONTEXT = ("setpoint_mode", "override_active", "override_remaining", "room_setpoint")
+
+    def __init__(self, measurements: MeasurementRepository, clock: Clock, equipment_id: EquipmentId) -> None:
+        self._measurements = measurements
+        self._clock = clock
+        self._equipment_id = equipment_id
+
+    async def run(self) -> ScheduleView | None:
+        rows = {m.metric_key.value: m for m in await self._measurements.latest(self._equipment_id)}
+        days = []
+        for name in SCHEDULE_DAYS:
+            m = rows.get(self.PREFIX + name)
+            parsed = parse_transitions(json.loads(m.value.text or "null")) if m is not None else None
+            if parsed is None:
+                return None  # programme incomplet : rien plutôt qu'un programme inventé
+            days.append(parsed)
+        schedule = WeeklySchedule(tuple(days))
+        updated = max(rows[self.PREFIX + n].instant for n in SCHEDULE_DAYS)
+        return ScheduleView(
+            equipment_id=self._equipment_id,
+            schedule=schedule,
+            state=schedule_state(schedule, self._clock.now()),
+            updated_at=updated,
+            context={k: rows[k] for k in self.CONTEXT if k in rows},
+        )

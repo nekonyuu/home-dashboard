@@ -31,12 +31,14 @@ from app.application.usecases.queries import (
     GetHealth,
     GetLatest,
     GetMetrics,
+    GetSchedule,
     GetSeries,
 )
 from app.domain.model import Equipment, Gap, GapCause
 from app.domain.services import GapDetector
 from app.domain.values import (
     EnergyDay,
+    EquipmentId,
     ErrorKind,
     Instant,
     Measurement,
@@ -52,6 +54,7 @@ INTERVAL = 300
 NOW = paris(2026, 10, 18, 12)
 MODE = MetricKey("dhw_mode")
 STATUS = MetricKey("dhw_status")
+ROOM = EquipmentId("room_1")
 
 
 class World:
@@ -67,6 +70,7 @@ class World:
                 MetricInfo(DHW, TEMP, "Température ECS", "°C"),
                 MetricInfo(DHW, COUNTER, "Énergie ECS", "Wh", cumulative=True),
                 MetricInfo(DHW, MODE, "Mode", None, enum={0: "Chauffage", 1: "Veille"}),
+                MetricInfo(ROOM, MetricKey("setpoint_mode"), "Mode de consigne", None, enum={0: "BASIC", 1: "PROG"}),
             ]
         )
         self.state = SimpleNamespace(
@@ -104,6 +108,7 @@ class World:
                 gap_detector=detector,
             ),
             get_metrics=GetMetrics(self.catalog),
+            get_schedule=GetSchedule(self.measurements, self.clock, ROOM),
             scheduler_state=lambda: self.state,
             clock=self.clock,
         )
@@ -413,3 +418,40 @@ def test_cycles_validation_and_empty(world, client):
     assert client.get("/api/cycles").json() == []
     for bad in ({"from": "x"}, {"from": 10, "to": 5}, {"from": 0, "to": 10**9}):
         assert client.get("/api/cycles", params=bad).status_code == 400
+
+
+DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+WEEKDAY = [{"minute": 240, "setpoint": 21.0}, {"minute": 360, "setpoint": 20.0}, {"minute": 1320, "setpoint": 19.0}]
+
+
+def _room(key: str, value: MeasurementValue, t: int = NOW.epoch - 3600) -> Measurement:
+    return Measurement(ROOM, MetricKey(key), Instant(t), value, "1", Instant(t + 5))
+
+
+def test_schedule_404_until_every_day_is_known(world, client):
+    assert client.get("/api/schedule").status_code == 404
+    _put(world, *(_room(f"heat_schedule_{d}", MeasurementValue.of_json(WEEKDAY)) for d in DAYS[:6]))
+    assert client.get("/api/schedule").status_code == 404
+
+
+def test_schedule_current_next_mode_and_override(world, client):
+    # NOW = dimanche 18/10/2026 12:00 Paris ; le dimanche n'a qu'un changement, à 08:00
+    _put(
+        world,
+        *(_room(f"heat_schedule_{d}", MeasurementValue.of_json(WEEKDAY)) for d in DAYS[:6]),
+        _room("heat_schedule_sunday", MeasurementValue.of_json([{"minute": 480, "setpoint": 20.5}]), NOW.epoch - 60),
+        _room("setpoint_mode", MeasurementValue(ValueType.INTEGER, number=1)),
+        _room("override_active", MeasurementValue.of_bool(True)),
+        _room("override_remaining", MeasurementValue(ValueType.INTEGER, number=45, unit="min")),
+        _room("room_setpoint", MeasurementValue.of_number(21.5, "°C")),
+    )
+    body = client.get("/api/schedule").json()
+    assert body["mode"] == 1 and body["mode_display"] == "PROG"
+    assert [d["weekday"] for d in body["days"]] == list(range(7))
+    assert body["days"][0]["transitions"][0] == {"minute": 240, "setpoint": 21.0}
+    assert body["current_setpoint"] == 20.5
+    assert body["applied_setpoint"] == 21.5
+    # prochain changement : lundi 19/10 04:00 Paris
+    assert body["next"] == {"at": paris(2026, 10, 19, 4).epoch, "setpoint": 21.0}
+    assert body["override"] == {"active": True, "remaining_minutes": 45}
+    assert body["updated_at"] == NOW.epoch - 60

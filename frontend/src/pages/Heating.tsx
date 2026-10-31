@@ -1,5 +1,6 @@
 import { useLatest, useSeries } from "../api/hooks";
 import { ChartCard } from "../components/charts";
+import { ScheduleCard, useNextChange } from "../components/ScheduleCard";
 import { IconGauge, IconOutdoor, IconThermo, IconWave } from "../components/icons";
 import { Card, ErrorState, PageHeader, Segmented, Tile } from "../components/ui";
 import { formatLatest } from "../lib/format";
@@ -28,6 +29,7 @@ export function Heating() {
   const pressure = useSeries(PRESSURE, period.range);
   const trends = useTrends([HOUSE[0], HOUSE[2], WATER[0], PRESSURE[0]]);
   const pending = latest.isPending;
+  const nextChange = useNextChange();
   const error = latest.error ?? house.error ?? water.error;
 
   return (
@@ -45,7 +47,12 @@ export function Heating() {
             icon={<IconThermo size={16} />}
             value={findMetric(index, "room_temperature")}
             trend={trends.get("room_1/room_temperature")}
-            extra={`Consigne ${formatLatest(findMetric(index, "room_setpoint"))}`}
+            extra={
+              <>
+                Consigne {formatLatest(findMetric(index, "room_setpoint"))}
+                {nextChange && <> · puis {nextChange}</>}
+              </>
+            }
             loading={pending}
           />
           <Tile
@@ -80,6 +87,7 @@ export function Heating() {
             loading={water.loading}
           />
         </div>
+        <ScheduleCard />
         <div className="grid-2">
           <ChartCard title="Pression du circuit" series={pressure.series} loading={pressure.loading} height={200} />
           <Card title="Réglages en cours">
@@ -87,7 +95,6 @@ export function Heating() {
               {(
                 [
                   ["Mode du thermostat", "thermostat_mode"],
-                  ["Programmation", "setpoint_mode"],
                   ["Chauffe en cours", "heating_ongoing"],
                   ["Service de la PAC", "generator_status"],
                   ["Modulation", "modulation"],

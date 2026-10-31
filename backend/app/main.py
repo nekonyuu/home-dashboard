@@ -44,6 +44,7 @@ from app.application.usecases.queries import (
     GetHealth,
     GetLatest,
     GetMetrics,
+    GetSchedule,
     GetSeries,
 )
 from app.config import ConfigError, Settings
@@ -83,6 +84,7 @@ class Container:
     get_gaps: GetGaps
     get_energy: GetEnergy
     get_cycles: GetCycles
+    get_schedule: GetSchedule
     get_health: GetHealth
     get_metrics: GetMetrics
     clock: SystemClock
@@ -175,6 +177,7 @@ async def build(settings: Settings) -> Container:
             gap_detector=gap_detector,
         ),
         get_metrics=GetMetrics(gateway),
+        get_schedule=GetSchedule(measurements, clock, EquipmentId("room_1")),
         clock=clock,
         get_health=GetHealth(
             poll_log=poll_log,
@@ -219,6 +222,7 @@ def create_app(settings: Settings | None = None, *, start_scheduler: bool = True
             get_energy=container.get_energy,
             get_cycles=container.get_cycles,
             get_metrics=container.get_metrics,
+            get_schedule=container.get_schedule,
             scheduler_state=lambda: container.scheduler.state,
             clock=container.clock,
         )

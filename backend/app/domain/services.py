@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from app.domain.model import Gap, GapCause, HeatingCycle
+from app.domain.model import Gap, GapCause, HeatingCycle, ScheduleTransition, WeeklySchedule
 from app.domain.values import (
     Bucket,
     BucketSize,
@@ -366,3 +366,35 @@ class CycleDetector:
     def _value_at(self, series: Sequence[Measurement], prior: Measurement | None, at: Instant) -> float | None:
         m = self._reading_at(series, prior, at)
         return None if m is None else m.value.number
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduleState:
+    setpoint: float | None
+    next_at: Instant | None
+    next_setpoint: float | None
+
+
+def schedule_state(schedule: WeeklySchedule, now: Instant) -> ScheduleState:
+    """Consigne programmée à ``now`` et prochain changement, en heure de Paris (changements d'heure compris)."""
+    local = datetime.fromtimestamp(now.epoch, PARIS)
+    weekday, minute = local.weekday(), local.hour * 60 + local.minute
+    current = schedule.setpoint_at(weekday, minute)
+    found = schedule.next_transition(weekday, minute)
+    if found is None:
+        return ScheduleState(current, None, None)
+    ahead, t = found
+    day = local.date() + timedelta(days=ahead)
+    at = datetime(day.year, day.month, day.day, t.minute // 60, t.minute % 60, tzinfo=PARIS)
+    return ScheduleState(current, Instant(int(at.timestamp())), t.setpoint)
+
+
+def parse_transitions(raw: object) -> tuple[ScheduleTransition, ...] | None:
+    """``[{minute, setpoint}]`` (forme normalisée par l'adaptateur) -> transitions triées ; ``None`` si invalide."""
+    if not isinstance(raw, list):
+        return None
+    try:
+        out = [ScheduleTransition(int(e["minute"]), float(e["setpoint"])) for e in raw]
+    except (KeyError, TypeError, ValueError):
+        return None
+    return tuple(sorted(out, key=lambda t: t.minute))

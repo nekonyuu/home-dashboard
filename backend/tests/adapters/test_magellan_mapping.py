@@ -1,3 +1,4 @@
+import json
 from datetime import date
 
 import pytest
@@ -9,6 +10,7 @@ from app.adapters.outbound.magellan.mapping import (
     measurements_of,
     parse_value,
     resolve_equipment,
+    schedule_value,
 )
 from app.domain.values import EquipmentId, Instant, MetricKey, Tariff, ValueType
 from tests import magellan_fixture as fx
@@ -119,3 +121,21 @@ def test_energy_days_ignore_other_series_and_bad_periods():
         },
     ]
     assert energy_days_of(series) == []
+
+
+def test_heating_schedule_is_normalised():
+    ms = {m.metric_key.value: m for m in measurements_of(resolved()[EquipmentId("room_1")], CAT, NOW)}
+    monday = json.loads(ms["heat_schedule_monday"].value.text)
+    assert monday == [
+        {"minute": 240, "setpoint": 21.0},
+        {"minute": 360, "setpoint": 20.0},
+        {"minute": 900, "setpoint": 21.0},
+        {"minute": 1080, "setpoint": 20.0},
+        {"minute": 1320, "setpoint": 19.0},
+    ]
+    assert {f"heat_schedule_{d}" for d in ("tuesday", "sunday")} <= set(ms)
+
+
+@pytest.mark.parametrize("raw", ['{"a": 1}', "[[60]]", '[["x", 20]]', "[[1500, 20, 0]]"])
+def test_unexpected_schedule_format_is_rejected(raw):
+    assert schedule_value(parse_value(raw, CAT.get(100320), None)) is None

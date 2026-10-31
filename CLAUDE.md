@@ -3,7 +3,7 @@
 Dashboard perso de la maison (dépôt `home-dashboard`, multi-fournisseurs). Source principale : PAC Atlantic
 **Alfea Excellia S** + ballon ECS (thermostat Navilink 228, sans box), données lues sur le cloud **Magellan** d'Atlantic (`apis.groupe-atlantic.com`). Le compte n'existe **pas** chez Overkiz :
 `pyoverkiz` a été retiré, ne pas le réintroduire (`docs/phase0-findings.md` §0).
-**`PLAN.md` (révision 3) est la référence : ne le modifier qu'avec l'accord explicite du propriétaire.**
+**`PLAN.md` (révision 4) est la référence : ne le modifier qu'avec l'accord explicite du propriétaire.**
 
 ## État
 Phases 0 à 5 terminées (`PLAN.md` §12) : collecte, API, front, image Docker publiée par la CI, en service sur le NAS.
@@ -66,7 +66,7 @@ Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/
 
 ## API HTTP (lecture seule, `backend/app/adapters/inbound/http/routes.py`)
 `/api/health` (toujours 200, état dans le corps), `/api/equipment`, `/api/latest`, `/api/series` (bucket 5m/1h/1d auto),
-`/api/gaps`, `/api/energy`, `/api/cycles`. Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
+`/api/gaps`, `/api/energy`, `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
 jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)
@@ -109,3 +109,10 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 ## Points ouverts
 - Unité des compteurs 57/59 (Wh supposé) : comparer leurs deltas aux consommations journalières.
 - Libellés des mesures vides via l'API tant qu'aucun poll n'a réussi depuis le démarrage (`MetricCatalog` sans réseau).
+
+## Programme de chauffage (lecture seule)
+- Capacités 100320–100326 (lundi→dimanche) `[[minute, °C, drapeau], …]`, cases vides `[0,0,0]` ; `schedule: true`
+  dans `semantics.yaml` → normalisées par `mapping.py` en `[{minute, setpoint}]`, stockées comme mesures JSON (point à
+  chaque modification). Rafraîchissement (100327–100333) ignoré : installation en chauffage seul.
+- Domaine : `WeeklySchedule` + `schedule_state` (heure de Paris) ; `GetSchedule` ; front : `components/ScheduleCard.tsx`
+  (jours identiques regroupés, tête de plage « veille » hachurée si elle diffère selon les jours, vue tableau).

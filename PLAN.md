@@ -6,6 +6,8 @@ Révision 2 : intègre la revue critique de la v1 (quotas, schéma, Docker, SQLi
 
 Révision 3 (18/10/2026, après la phase 0, voir `docs/phase0-findings.md`) : le compte n'existe pas chez Overkiz (installation Navilink 228 sans box). `pyoverkiz` est abandonné ; la source est l'API **Magellan** d'Atlantic (`apis.groupe-atlantic.com`), appelée directement en `aiohttp`. Schéma, catch-up et `semantics.yaml` ajustés sur les données réelles.
 
+Révision 4 (31/10/2026, décision du propriétaire) : pas d'authentification pour la phase 6 ; l'accès est restreint par adresse source au réseau local et aux IP Tailscale (`ALLOWED_NETWORKS`), avec protection contre les requêtes intersites (§13).
+
 ## 1. Objectifs et non-objectifs
 
 **Objectifs**
@@ -383,7 +385,7 @@ services:
 - **Sauvegarde intégrée** : tâche quotidienne dans l'application (`VACUUM INTO '/data/backup/pac-YYYY-MM-DD.db'`), rotation sur `BACKUP_KEEP` jours. La CLI `sqlite3` n'est pas dans l'image. Une copie sur le même volume ne protège pas d'une panne disque : prévoir en plus une sauvegarde NAS du dossier `backup/` vers un autre support.
 - Deux voies de déploiement : build sur le NAS (`docker compose up -d --build`) ou build sur le poste puis registre. La seconde est préférable si le NAS est ARM ou lent.
 - L'interface Docker/Compose d'UGOS varie selon la version : valider l'import du compose ou la création manuelle du conteneur avec les mêmes paramètres. Je ne sais pas si les secrets de compose sont acceptés.
-- Accès : `http://IP-DU-NAS:8080`. Pas d'exposition hors LAN sans reverse proxy avec authentification.
+- Accès : `http://IP-DU-NAS:8080`. Accès réservé au LAN et à Tailscale (§13), aucune exposition Internet.
 
 ## 12. Plan d'implémentation par phases
 
@@ -427,13 +429,16 @@ Un agent doit **s'arrêter** à chaque fin de phase marquée « ⏸ » et me mon
 - Critère : persistance après redémarrage du conteneur sur le NAS ; restauration d'une sauvegarde testée.
 
 **Phase 6 (optionnelle) : commandes**
-- Nouveau port sortant `CommandGateway` (jamais d'appel direct à Magellan depuis l'application ; écriture via `/magellan/executions/writecapability`), authentification, journal des commandes. Seulement après une période de lecture seule stable.
+- Nouveau port sortant `CommandGateway` (jamais d'appel direct à Magellan depuis l'application ; écriture via `/magellan/executions/writecapability`), filtrage par réseau source et protection intersites (§13), journal des commandes (avec l'IP d'origine). Seulement après une période de lecture seule stable.
 
 ## 13. Sécurité
 
 - Identifiants en variables d'environnement uniquement, `.env` en `600`, jamais dans l'image ni dans git.
 - Conteneur non-root, port exposé sur le LAN uniquement.
-- Aucune exposition Internet sans reverse proxy authentifié (obligatoire dès la phase 6).
+- Pas d'authentification (usage domestique), mais l'API n'accepte que les requêtes dont l'adresse source appartient à `ALLOWED_NETWORKS` (par défaut `192.168.4.0/24,100.0.0.0/24` : LAN et Tailscale), sinon 403. Sans `ALLOWED_NETWORKS`, les commandes sont désactivées.
+- L'adresse filtrée est celle de la connexion TCP ; `X-Forwarded-For` est ignoré. Vérifier sur le NAS que le conteneur voit l'IP réelle du client et non la passerelle Docker (sinon `network_mode: host`).
+- Commandes en `POST` uniquement, avec en-tête `X-Requested-By: home-dashboard` obligatoire et `Origin` vérifiée ; aucun CORS (protection contre les requêtes intersites depuis un navigateur du LAN).
+- Aucune exposition Internet.
 - Ne jamais logger mot de passe, jetons, nom d'utilisateur, `deviceId`, `setupId`, numéros de série : utiliser `EquipmentId` dans les logs et les réponses d'API. Anonymiser les dumps avec `discover_magellan.py` (masque aussi les capacités identifiantes : numéros de série, noms, prix).
 
 ## 14. Consignes pour l'agent Claude Code
