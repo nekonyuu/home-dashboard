@@ -3,7 +3,7 @@
 Dashboard perso de la maison (dépôt `home-dashboard`, multi-fournisseurs). Source principale : PAC Atlantic
 **Alfea Excellia S** + ballon ECS (thermostat Navilink 228, sans box), données lues sur le cloud **Magellan** d'Atlantic (`apis.groupe-atlantic.com`). Le compte n'existe **pas** chez Overkiz :
 `pyoverkiz` a été retiré, ne pas le réintroduire (`docs/phase0-findings.md` §0).
-**`PLAN.md` (révision 3) est la référence : ne le modifier qu'avec l'accord explicite du propriétaire.**
+**`PLAN.md` (révision 4) est la référence : ne le modifier qu'avec l'accord explicite du propriétaire.**
 
 ## État
 Phases 0 à 5 terminées (`PLAN.md` §12) : collecte, API, front, image Docker publiée par la CI, en service sur le NAS.
