@@ -1,0 +1,98 @@
+# Correspondance LG ThinQ -> domaine, établie sur le dump de la sonde (docs/thinq-discovery.md §6).
+#
+# Un appareil est reconnu par son `deviceType` (jamais par son alias, modifiable). Plusieurs appareils du même type
+# sont numérotés par deviceId croissant (`id` reçoit le suffixe _1, _2...), sauf `single: true`.
+#
+# Chemin (`path`) dans l'état : clés séparées par des points ; `nom[EMPLACEMENT]` choisit, dans une liste, l'élément dont
+# `locationName` vaut EMPLACEMENT ; un état renvoyé sous forme de liste (lave-linge) est lu via son premier élément.
+# Types : number | bool (booléen JSON, ou texte égal à `true_value`) | enum (valeur texte -> [code stable, libellé])
+#         | minutes (`path` = objet minuteur, `hour` et `minute` = ses clés ; valeur en minutes).
+# Les codes d'enum sont persistés : ne jamais en changer ni en réutiliser.
+
+equipment:
+  - id: washer
+    kind: washer
+    label: Lave-linge
+    device_type: DEVICE_WASHER
+    single: true
+    metrics:
+      run_state:
+        label: "État du cycle"
+        type: enum
+        path: runState.currentState
+        enum:
+          POWER_OFF: [0, "Éteint"]
+          INITIAL: [1, "Prêt"]
+          RUNNING: [2, "En cours"]
+          PAUSE: [3, "En pause"]
+          END: [4, "Terminé"]
+          ERROR: [5, "Erreur"]
+          RINSING: [6, "Rinçage"]
+          SPINNING: [7, "Essorage"]
+          DRYING: [8, "Séchage"]
+          RESERVED: [9, "Départ différé"]
+          DETECTING: [10, "Détection"]
+          REFRESHING: [11, "Rafraîchissement"]
+          STEAM_SOFTENING: [12, "Adoucissement vapeur"]
+          COOL_DOWN: [13, "Refroidissement"]
+          RINSE_HOLD: [14, "Rinçage en attente"]
+          SLEEP: [15, "Veille"]
+      remaining_minutes: {label: "Temps restant", type: minutes, path: timer, hour: remainHour, minute: remainMinute}
+      total_minutes: {label: "Durée du cycle", type: minutes, path: timer, hour: totalHour, minute: totalMinute}
+      cycle_count: {label: "Cycles effectués", type: number, path: cycle.cycleCount}
+      remote_control: {label: "Pilotage à distance", type: bool, path: remoteControlEnable.remoteControlEnabled}
+
+  - id: dishwasher
+    kind: dishwasher
+    label: Lave-vaisselle
+    device_type: DEVICE_DISH_WASHER
+    single: true
+    metrics:
+      run_state:
+        label: "État du cycle"
+        type: enum
+        path: runState.currentState
+        enum:
+          POWER_OFF: [0, "Éteint"]
+          INITIAL: [1, "Prêt"]
+          RUNNING: [2, "En cours"]
+          PAUSE: [3, "En pause"]
+          END: [4, "Terminé"]
+          ERROR: [5, "Erreur"]
+          RINSING: [6, "Rinçage"]
+          DRYING: [8, "Séchage"]
+          RESERVED: [9, "Départ différé"]
+          POWER_FAIL: [20, "Coupure de courant"]
+          CANCEL: [21, "Annulé"]
+          NIGHT_DRY: [22, "Séchage nocturne"]
+      remaining_minutes: {label: "Temps restant", type: minutes, path: timer, hour: remainHour, minute: remainMinute}
+      total_minutes: {label: "Durée du cycle", type: minutes, path: timer, hour: totalHour, minute: totalMinute}
+      door_open: {label: "Porte ouverte", type: bool, path: doorStatus.doorState, true_value: OPEN}
+      course:
+        label: "Programme"
+        type: enum
+        path: dishWashingCourse.currentDishWashingCourse
+        enum:
+          AUTO: [0, "Auto"]
+          NORMAL: [1, "Normal"]
+          HEAVY: [2, "Intensif"]
+          DELICATE: [3, "Délicat"]
+          TURBO: [4, "Turbo"]
+          EXPRESS: [5, "Express"]
+          RINSE: [6, "Rinçage"]
+          REFRESH: [7, "Rafraîchissement"]
+          MACHINE_CLEAN: [8, "Nettoyage de la machine"]
+          DOWNLOAD_CYCLE: [9, "Programme téléchargé"]
+      rinse_refill: {label: "Liquide de rinçage à remplir", type: bool, path: dishWashingStatus.rinseRefill}
+
+  - id: fridge
+    kind: fridge
+    label: Réfrigérateur
+    device_type: DEVICE_REFRIGERATOR
+    single: true
+    metrics:
+      fridge_setpoint: {label: "Consigne réfrigérateur", type: number, path: "temperature[FRIDGE].targetTemperature", unit: "°C"}
+      freezer_setpoint: {label: "Consigne congélateur", type: number, path: "temperature[FREEZER].targetTemperature", unit: "°C"}
+      door_open: {label: "Porte ouverte", type: bool, path: "doorStatus[MAIN].doorState", true_value: OPEN}
+      express_mode: {label: "Mode express", type: bool, path: refrigeration.expressMode}
+      eco_mode: {label: "Mode éco", type: bool, path: ecoFriendly.ecoFriendlyMode}
