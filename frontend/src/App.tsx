@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 
 import { REFRESH_MS } from "./api/hooks";
 import { Layout } from "./components/Layout";
@@ -33,8 +33,9 @@ export const routes = [
       { index: true, element: <Overview /> },
       { path: "ecs", element: <Dhw /> },
       { path: "chauffage", element: <Heating /> },
-      { path: "maison", element: <Home /> },
-      { path: "maison/:id", element: <Appliance /> },
+      { path: "appareils", element: <Home /> },
+      { path: "appareils/:id", element: <Appliance /> },
+      { path: "maison/*", element: <Navigate to="/" replace /> },
       { path: "historique", element: <History /> },
       { path: "energie", element: <Energy /> },
       { path: "*", element: <NotFound /> },

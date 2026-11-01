@@ -18,7 +18,7 @@ export function Home() {
 
   return (
     <>
-      <PageHeader title="Maison" subtitle="Électroménager connecté LG ThinQ" />
+      <PageHeader title="Électroménager" subtitle="Appareils connectés LG ThinQ" />
       <ApplianceSwitcher appliances={appliances} />
       {(equipment.isError || latest.isError) && <ErrorState error={equipment.error ?? latest.error} />}
       <div className="stack">

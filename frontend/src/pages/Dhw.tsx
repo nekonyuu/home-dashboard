@@ -23,8 +23,8 @@ export function Dhw() {
   return (
     <>
       <PageHeader
-        title="Eau chaude sanitaire"
-        subtitle="Ballon de la pompe à chaleur"
+        title="Chauffe-eau"
+        subtitle="Eau chaude sanitaire · ballon de la pompe à chaleur"
         actions={<Segmented label="Période" options={period.options} value={period.id} onChange={period.setId} />}
       />
       {(latest.isError || error) && <ErrorState error={latest.error ?? error} />}
