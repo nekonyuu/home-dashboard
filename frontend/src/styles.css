@@ -1014,24 +1014,6 @@ select {
 }
 
 /* ---------- Maison (appareils LG) ---------- */
-.nav-link.sub {
-  margin-left: 14px;
-  padding: 7px 10px;
-  font-size: 13.5px;
-  gap: 9px;
-}
-.subnav {
-  display: grid;
-  gap: 2px;
-  margin: 2px 0 4px;
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
-  margin-left: 20px;
-}
-.subnav .nav-link.sub {
-  margin-left: 0;
-}
-
 .grid-appliances {
   display: grid;
   gap: 16px;
@@ -1185,4 +1167,73 @@ select {
   .hero-value.small {
     font-size: 24px;
   }
+}
+
+/* ---------- Navigation par ensembles, sections de la maison ---------- */
+.nav-group {
+  display: grid;
+  gap: 2px;
+  margin-top: 14px;
+}
+.nav-group-label {
+  padding: 0 10px 4px;
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.stack.tight {
+  gap: 10px;
+}
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.section-title h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 620;
+  letter-spacing: -0.005em;
+  color: var(--text-2);
+}
+.card-foot {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.heating-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.heating-main .sparkline {
+  width: 100%;
+  height: 52px;
+}
+@media (max-width: 760px) {
+  .heating-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Carte à pied de page (lien vers le détail) : le contenu occupe la hauteur, le lien reste en bas */
+.card-col {
+  display: flex;
+  flex-direction: column;
+}
+.card-col .hero {
+  flex: 1;
+  height: auto;
+  margin-bottom: 12px;
+}
+.card-col .card-foot {
+  margin-top: auto;
+}
+.card-col > .list {
+  margin-bottom: 12px;
 }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet, useMatch } from "react-router-dom";
+import { type ReactNode, useEffect, useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
 
 import { useEnergy, useEquipment, useHealth } from "../api/hooks";
 import { formatAge } from "../lib/format";
@@ -43,36 +43,52 @@ const THEME = {
   dark: { icon: <IconMoon />, label: "Thème : sombre" },
 };
 
-function useNavItems() {
+interface NavItem {
+  to: string;
+  label: string;
+  short: string;
+  icon: ReactNode;
+}
+
+/** Navigation centrée sur la maison : l'accueil, puis ses éléments (pompe à chaleur, électroménager), puis les vues transverses. */
+function useNav() {
   const now = Date.now();
   // la page Énergie n'apparaît que si le fournisseur déclare des consommations
   const energy = useEnergy(isoDay(now - 31 * 86_400_000), isoDay(now));
-  // la page Maison n'apparaît que si des appareils LG sont connus
-  const equipment = useEquipment();
-  const hasHome = homeAppliances(equipment.data).length > 0;
-  const items = [
-    { to: "/", label: "Vue d'ensemble", short: "Accueil", icon: <IconHome /> },
-    { to: "/ecs", label: "Eau chaude", short: "ECS", icon: <IconDrop /> },
-    { to: "/chauffage", label: "Chauffage", short: "Chauffage", icon: <IconFlame /> },
-    ...(hasHome ? [{ to: "/maison", label: "Maison", short: "Maison", icon: <IconAppliances /> }] : []),
-    { to: "/historique", label: "Historique", short: "Historique", icon: <IconChart /> },
-  ];
-  if ((energy.data?.length ?? 0) > 0) items.push({ to: "/energie", label: "Énergie", short: "Énergie", icon: <IconBolt /> });
-  return items;
-}
-
-/** Sous-menu « Maison » de la barre latérale : déplié sur les pages Maison, un lien par appareil. */
-function HomeSubNav() {
-  const inHome = useMatch("/maison/*");
   const equipment = useEquipment();
   const appliances = homeAppliances(equipment.data);
-  if (!inHome || appliances.length === 0) return null;
+  const home: NavItem = { to: "/", label: "Maison", short: "Maison", icon: <IconHome /> };
+  const heatPump: NavItem[] = [
+    { to: "/chauffage", label: "Chauffage", short: "Chauffage", icon: <IconFlame /> },
+    { to: "/ecs", label: "Chauffe-eau", short: "ECS", icon: <IconDrop /> },
+  ];
+  const devices: NavItem[] = appliances.map((a) => ({
+    to: `/appareils/${a.id}`,
+    label: a.label,
+    short: a.label,
+    icon: <ApplianceIcon kind={a.kind} size={18} />,
+  }));
+  const views: NavItem[] = [{ to: "/historique", label: "Historique", short: "Historique", icon: <IconChart /> }];
+  if ((energy.data?.length ?? 0) > 0) views.push({ to: "/energie", label: "Énergie", short: "Énergie", icon: <IconBolt /> });
+  // mobile : un onglet par ensemble ; les appareils partagent l'onglet « Appareils » (puces dans la page)
+  const tabs: NavItem[] = [
+    home,
+    ...heatPump,
+    ...(appliances.length ? [{ to: "/appareils", label: "Appareils", short: "Appareils", icon: <IconAppliances /> }] : []),
+    ...views,
+  ];
+  return { home, heatPump, devices, views, tabs };
+}
+
+function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
+  if (items.length === 0) return null;
   return (
-    <div className="subnav" role="group" aria-label="Appareils">
-      {appliances.map((a) => (
-        <NavLink key={a.id} to={`/maison/${a.id}`} className="nav-link sub">
-          <ApplianceIcon kind={a.kind} size={16} />
-          {a.label}
+    <div className="nav-group" role="group" aria-label={label}>
+      <div className="nav-group-label">{label}</div>
+      {items.map((i) => (
+        <NavLink key={i.to} to={i.to} className="nav-link">
+          {i.icon}
+          {i.label}
         </NavLink>
       ))}
     </div>
@@ -90,7 +106,7 @@ function CollectStatus() {
 
 export function Layout() {
   const [theme, nextTheme] = useTheme();
-  const items = useNavItems();
+  const nav = useNav();
   const health = useHealth();
   const last = health.data?.poller.last_success;
 
@@ -99,22 +115,20 @@ export function Layout() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">
-            <IconFlame size={17} />
+            <IconHome size={17} />
           </span>
           <span>
-            Alfea Excellia S<small>Pompe à chaleur · ECS</small>
+            Ma maison<small>Tableau de bord</small>
           </span>
         </div>
         <nav aria-label="Pages">
-          {items.map((i) => (
-            <div key={i.to}>
-              <NavLink to={i.to} end={i.to === "/" || i.to === "/maison"} className="nav-link">
-                {i.icon}
-                {i.label}
-              </NavLink>
-              {i.to === "/maison" && <HomeSubNav />}
-            </div>
-          ))}
+          <NavLink to={nav.home.to} end className="nav-link">
+            {nav.home.icon}
+            {nav.home.label}
+          </NavLink>
+          <NavGroup label="Pompe à chaleur" items={nav.heatPump} />
+          <NavGroup label="Électroménager" items={nav.devices} />
+          <NavGroup label="Vues" items={nav.views} />
         </nav>
         <div className="sidebar-foot">
           <CollectStatus />
@@ -129,9 +143,9 @@ export function Layout() {
       <div className="main">
         <div className="mobile-brand">
           <span className="brand-mark">
-            <IconFlame size={17} />
+            <IconHome size={17} />
           </span>
-          <span style={{ marginRight: "auto" }}>Alfea Excellia S</span>
+          <span style={{ marginRight: "auto" }}>Ma maison</span>
           <CollectStatus />
           <button type="button" className="btn icon" onClick={nextTheme} aria-label={THEME[theme].label}>
             {THEME[theme].icon}
@@ -142,8 +156,8 @@ export function Layout() {
       </div>
 
       <nav className="tabbar" aria-label="Pages">
-        {items.map((i) => (
-          <NavLink key={i.to} to={i.to} end={i.to === "/"}>
+        {nav.tabs.map((i) => (
+          <NavLink key={i.to} to={i.to} end={i.to === "/" || i.to === "/appareils"}>
             {i.icon}
             {i.short}
           </NavLink>

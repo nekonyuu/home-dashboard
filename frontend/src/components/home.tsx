@@ -104,7 +104,7 @@ export function ProgressBar({ value, label }: { value: number; label: string }) 
 export function ApplianceCard({ equipment, index }: { equipment: Equipment; index: Map<string, Latest> }) {
   const s = summaryOf(equipment, metricsOf(index, equipment.id));
   return (
-    <Link to={`/maison/${equipment.id}`} className="card appliance-card">
+    <Link to={`/appareils/${equipment.id}`} className="card appliance-card">
       <div className="appliance-head">
         <span className="appliance-icon">
           <ApplianceIcon kind={equipment.kind} size={22} />
@@ -125,12 +125,12 @@ export function ApplianceCard({ equipment, index }: { equipment: Equipment; inde
 export function ApplianceSwitcher({ appliances }: { appliances: Equipment[] }) {
   return (
     <nav className="switcher" aria-label="Appareils">
-      <NavLink to="/maison" end>
+      <NavLink to="/appareils" end>
         <IconAppliances size={15} />
         Tous
       </NavLink>
       {appliances.map((a) => (
-        <NavLink key={a.id} to={`/maison/${a.id}`}>
+        <NavLink key={a.id} to={`/appareils/${a.id}`}>
           <ApplianceIcon kind={a.kind} size={15} />
           {a.label}
         </NavLink>

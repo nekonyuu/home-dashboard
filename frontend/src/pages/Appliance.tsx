@@ -124,11 +124,11 @@ export function Appliance() {
   if (!current) {
     return (
       <>
-        <PageHeader title="Maison" />
+        <PageHeader title="Électroménager" />
         <ApplianceSwitcher appliances={appliances} />
         <div className="card empty-state">
           <strong style={{ color: "var(--text-2)" }}>Appareil introuvable</strong>
-          <Link to="/maison">Retour à la maison</Link>
+          <Link to="/appareils">Retour aux appareils</Link>
         </div>
       </>
     );

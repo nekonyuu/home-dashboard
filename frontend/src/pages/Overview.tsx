@@ -1,21 +1,15 @@
 import { Link } from "react-router-dom";
 
 import { useEquipment, useHealth, useLatest } from "../api/hooks";
-import type { Latest } from "../api/types";
-import { ApplianceIcon, metricsOf, summaryOf } from "../components/home";
-import { IconGauge, IconOutdoor, IconPump, IconThermo, IconWave } from "../components/icons";
-import { Card, ErrorState, Freshness, PageHeader, Status, type Tone, Tile, ValueText } from "../components/ui";
+import type { Latest, Series } from "../api/types";
+import { Sparkline } from "../components/charts";
+import { ApplianceCard } from "../components/home";
+import { IconGauge } from "../components/icons";
+import { Card, ErrorState, Freshness, PageHeader, Status, ValueText } from "../components/ui";
 import { formatAge, formatBytes, formatDuration, formatLatest, formatNumber, GAP_CAUSES } from "../lib/format";
 import { homeAppliances, isHomeKind } from "../lib/home";
 import { findMetric, indexLatest } from "../lib/latest";
 import { useTrends } from "../lib/useTrends";
-
-const TREND_REQUESTS = [
-  { equipment: "heat_pump", metric: "outdoor_temperature" },
-  { equipment: "room_1", metric: "room_temperature" },
-  { equipment: "generator", metric: "flow_temperature" },
-  { equipment: "generator", metric: "return_temperature" },
-];
 
 const KIND_ORDER = ["heat_pump", "generator", "dhw", "circuit", "room"];
 
@@ -44,7 +38,7 @@ function DhwHero({ index }: { index: Map<string, Latest> }) {
   const reached = t !== null && sp !== null && t >= sp - 2;
 
   return (
-    <section className="card">
+    <section className="card card-col">
       <div className="hero">
         <div className="tank" role="img" aria-label={`Ballon : ${formatLatest(temp)} pour une consigne de ${formatLatest(setpoint)}`}>
           <div className="tank-fill" style={{ height: `${tankLevel(t) * 100}%` }} />
@@ -52,7 +46,7 @@ function DhwHero({ index }: { index: Map<string, Latest> }) {
         </div>
         <div>
           <div className="hero-label">
-            Eau chaude sanitaire
+            Chauffe-eau
             {on && on.value === false ? (
               <Status tone="critical">Désactivée</Status>
             ) : reached ? (
@@ -87,39 +81,12 @@ function DhwHero({ index }: { index: Map<string, Latest> }) {
           </div>
         </div>
       </div>
+      <div className="card-foot">
+        <Link to="/ecs" className="card-link">
+          Voir le chauffe-eau
+        </Link>
+      </div>
     </section>
-  );
-}
-
-function HeatPumpCard({ index }: { index: Map<string, Latest> }) {
-  const service = findMetric(index, "generator_status");
-  const errors = findMetric(index, "active_errors");
-  const errorCount = num(errors) ?? 0;
-  const rows: [string, Latest | undefined][] = [
-    ["Mode thermostat", findMetric(index, "thermostat_mode")],
-    ["Programmation", findMetric(index, "setpoint_mode")],
-    ["Chauffe en cours", findMetric(index, "heating_ongoing")],
-    ["Pression du circuit", findMetric(index, "water_pressure")],
-    ["Code unité extérieure", findMetric(index, "error_code")],
-  ];
-  const tone: Tone = errorCount > 0 ? "critical" : "good";
-  return (
-    <Card
-      title="Pompe à chaleur"
-      subtitle={service ? `Service en cours : ${formatLatest(service)}` : undefined}
-      aside={<Status tone={tone}>{errorCount > 0 ? `${errorCount} erreur(s)` : "Aucune erreur"}</Status>}
-    >
-      <ul className="list">
-        {rows
-          .filter(([, v]) => v !== undefined)
-          .map(([label, v]) => (
-            <li key={label}>
-              <span className="secondary">{label}</span>
-              <span className="kv">{formatLatest(v)}</span>
-            </li>
-          ))}
-      </ul>
-    </Card>
   );
 }
 
@@ -144,45 +111,6 @@ function EquipmentCard() {
             )}
           </li>
         ))}
-      </ul>
-    </Card>
-  );
-}
-
-/** Résumé de la maison : un appareil par ligne, avec l'essentiel (cycle en cours, consignes). */
-function HomeCard({ index }: { index: Map<string, Latest> }) {
-  const { data } = useEquipment();
-  const appliances = homeAppliances(data);
-  if (appliances.length === 0) return null;
-  return (
-    <Card
-      title="Maison"
-      subtitle="Électroménager connecté LG ThinQ"
-      aside={
-        <Link to="/maison" className="card-link">
-          Détails
-        </Link>
-      }
-    >
-      <ul className="list">
-        {appliances.map((a) => {
-          const s = summaryOf(a, metricsOf(index, a.id));
-          return (
-            <li key={a.id}>
-              <Link to={`/maison/${a.id}`} className="home-row">
-                <span className="appliance-icon small">
-                  <ApplianceIcon kind={a.kind} size={16} />
-                </span>
-                <span>
-                  <span className="primary">{a.label}</span>
-                  <br />
-                  <span className="secondary">{s.headline}</span>
-                </span>
-              </Link>
-              <Status tone={s.tone}>{s.status}</Status>
-            </li>
-          );
-        })}
       </ul>
     </Card>
   );
@@ -232,70 +160,128 @@ function CollectCard() {
   );
 }
 
+function HeatingCard({ index, trend }: { index: Map<string, Latest>; trend: Series | undefined }) {
+  const room = findMetric(index, "room_temperature");
+  const setpoint = findMetric(index, "room_setpoint");
+  const errors = num(findMetric(index, "active_errors")) ?? 0;
+  const rows: [string, Latest | undefined][] = [
+    ["Mode thermostat", findMetric(index, "thermostat_mode")],
+    ["Programmation", findMetric(index, "setpoint_mode")],
+    ["Chauffe en cours", findMetric(index, "heating_ongoing")],
+    ["Extérieur", findMetric(index, "outdoor_temperature")],
+    ["Départ / retour d'eau", undefined],
+    ["Pression du circuit", findMetric(index, "water_pressure")],
+  ];
+  const flow = num(findMetric(index, "flow_temperature"));
+  const back = num(findMetric(index, "return_temperature"));
+  return (
+    <section className="card card-col">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Chauffage</h2>
+          <p className="card-sub">Pompe à chaleur · {formatLatest(findMetric(index, "generator_status")) || "—"}</p>
+        </div>
+        <Status tone={errors > 0 ? "critical" : "good"}>{errors > 0 ? `${errors} erreur(s)` : "Aucune erreur"}</Status>
+      </div>
+      <div className="heating-main">
+        <div>
+          <div className="hero-label">Ambiance</div>
+          <div className="hero-value small">
+            <ValueText value={room} />
+          </div>
+          <div className="meta">Consigne {formatLatest(setpoint)}</div>
+        </div>
+        <Sparkline series={trend} />
+      </div>
+      <ul className="list">
+        {rows.map(([label, v]) => (
+          <li key={label}>
+            <span className="secondary">{label}</span>
+            <span className="kv">
+              {label.startsWith("Départ")
+                ? flow !== null && back !== null
+                  ? `${formatNumber(flow, "°C")} / ${formatNumber(back, "°C")}`
+                  : "—"
+                : formatLatest(v)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="card-foot">
+        <Link to="/chauffage" className="card-link">
+          Voir le chauffage
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function SectionTitle({ title, to, linkLabel }: { title: string; to?: string; linkLabel?: string }) {
+  return (
+    <div className="section-title">
+      <h2>{title}</h2>
+      {to && (
+        <Link to={to} className="card-link">
+          {linkLabel}
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export function Overview() {
   const latest = useLatest();
+  const equipment = useEquipment();
   const index = indexLatest(latest.data);
-  const trends = useTrends(TREND_REQUESTS);
+  const trends = useTrends([{ equipment: "room_1", metric: "room_temperature" }]);
   const loading = latest.isPending;
-  const roomSetpoint = findMetric(index, "room_setpoint");
+  const appliances = homeAppliances(equipment.data);
   const updated = latest.data?.length ? Math.min(...latest.data.map((l) => l.age_seconds)) : null;
 
   return (
     <>
       <PageHeader
-        title="Vue d'ensemble"
+        title="Maison"
         subtitle={updated !== null ? `Dernière mesure reçue ${formatAge(updated)}` : "En attente des premières mesures"}
       />
       {latest.isError && <ErrorState error={latest.error} />}
       <div className="stack">
-        <div className="grid-hero">
-          {loading ? <div className="card skeleton" style={{ minHeight: 200 }} /> : <DhwHero index={index} />}
-          {loading ? <div className="card skeleton" style={{ minHeight: 200 }} /> : <HeatPumpCard index={index} />}
-        </div>
-        <div className="grid-tiles">
-          <Tile
-            label="Extérieur"
-            icon={<IconOutdoor size={16} />}
-            value={findMetric(index, "outdoor_temperature")}
-            trend={trends.get("heat_pump/outdoor_temperature")}
-            loading={loading}
-          />
-          <Tile
-            label="Ambiance"
-            icon={<IconThermo size={16} />}
-            value={findMetric(index, "room_temperature")}
-            trend={trends.get("room_1/room_temperature")}
-            extra={roomSetpoint ? `Consigne ${formatLatest(roomSetpoint)}` : undefined}
-            loading={loading}
-          />
-          <Tile
-            label="Départ d'eau"
-            icon={<IconWave size={16} />}
-            value={findMetric(index, "flow_temperature")}
-            trend={trends.get("generator/flow_temperature")}
-            loading={loading}
-          />
-          <Tile
-            label="Retour d'eau"
-            icon={<IconPump size={16} />}
-            value={findMetric(index, "return_temperature")}
-            trend={trends.get("generator/return_temperature")}
-            extra={(() => {
-              const f = num(findMetric(index, "flow_temperature"));
-              const r = num(findMetric(index, "return_temperature"));
-              return f !== null && r !== null ? `Écart départ/retour ${formatNumber(f - r, "°C")}` : undefined;
-            })()}
-            loading={loading}
-          />
-        </div>
-        <div className="grid-2">
-          <EquipmentCard />
-          <CollectCard />
-        </div>
-        <HomeCard index={index} />
+        <section className="stack tight">
+          <SectionTitle title="Pompe à chaleur" />
+          <div className="grid-2">
+            {loading ? (
+              <>
+                <div className="card skeleton" style={{ minHeight: 320 }} />
+                <div className="card skeleton" style={{ minHeight: 320 }} />
+              </>
+            ) : (
+              <>
+                <HeatingCard index={index} trend={trends.get("room_1/room_temperature")} />
+                <DhwHero index={index} />
+              </>
+            )}
+          </div>
+        </section>
+        {appliances.length > 0 && (
+          <section className="stack tight">
+            <SectionTitle title="Électroménager" to="/appareils" linkLabel="Tout voir" />
+            <div className="grid-appliances">
+              {appliances.map((a) => (
+                <ApplianceCard key={a.id} equipment={a} index={index} />
+              ))}
+            </div>
+          </section>
+        )}
+        <section className="stack tight">
+          <SectionTitle title="Système" />
+          <div className="grid-2">
+            <EquipmentCard />
+            <CollectCard />
+          </div>
+        </section>
         <p className="note" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <IconGauge size={14} /> Les valeurs sont celles transmises par le cloud Atlantic ; elles ne changent que
-          lorsque l'installation signale une évolution.
+          <IconGauge size={14} /> Les valeurs de la pompe à chaleur sont celles transmises par le cloud Atlantic ; elles ne
+          changent que lorsque l'installation signale une évolution.
         </p>
       </div>
     </>

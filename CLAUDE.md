@@ -76,8 +76,11 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)
 - Vite + React + TypeScript, TanStack Query (rafraîchissement 60 s), uPlot (courbes), SVG maison (colonnes énergie).
-- Pages : `pages/Overview`, `Dhw`, `Heating`, `History`, `Energy` (bascule par usage / par tarif, mémorisée), `Home` (`/maison`) et
-  `Appliance` (`/maison/:id`) pour l'électroménager LG : sous-menu dans la barre latérale (desktop), puces défilantes (mobile).
+- Navigation centrée sur la maison : `/` = **Maison** (`pages/Overview`) avec la PAC en deux cartes (Chauffage, Chauffe-eau),
+  les appareils LG, puis l'état du système. Barre latérale par ensembles : Maison · Pompe à chaleur (`/chauffage` = `Heating`,
+  `/ecs` = `Dhw`) · Électroménager (`/appareils/:id` = `Appliance`, liste `/appareils` = `Home`) · Vues (`History`, `Energy`
+  avec bascule par usage / par tarif, mémorisée). Mobile : onglets Maison, Chauffage, ECS, Appareils, Historique, Énergie ;
+  puces défilantes pour passer d'un appareil à l'autre. `/maison` redirige vers `/`.
   Un appareil hors ligne s'affiche en gris, jamais en rouge ; le bandeau d'état ne concerne que l'installation Atlantic.
 - Règles de design (skill dataviz) :
   - un graphique = une unité = un axe Y, jamais de double axe ; plusieurs unités → petits multiples ;
@@ -114,6 +117,10 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 - Limite : un cycle entièrement manqué par le cloud n'apparaît pas (aucun cycle déduit de la température).
 
 ## Points ouverts
+- Volume d'eau chaude restant : **non disponible** sur ce ballon. Le catalogue définit `DHW_vV40TankRemaining` (268),
+  `DHW_vV40Maximal` (270), `DHW_rV40StateOfChargeHMI` (271) et `DHW_vTankCapacity` (258), mais l'installation ne les expose pas
+  (`DHW_stEstimationCapabilities` = 3 : seules température et débit d'eau sont estimées, pas `Tank_V40`). Seule la consigne de
+  charge V40 (105906, en %) est lue. À revérifier si Atlantic active l'estimation.
 - Unité des compteurs 57/59 (Wh supposé) : comparer leurs deltas aux consommations journalières.
 - Libellés des mesures vides via l'API tant qu'aucun poll n'a réussi depuis le démarrage (`MetricCatalog` sans réseau).
 
