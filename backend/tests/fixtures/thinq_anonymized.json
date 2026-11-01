@@ -1,0 +1,753 @@
+{
+  "generated_at": 1793563003,
+  "region": "eic",
+  "devices": {
+    "status": 200,
+    "response": [
+      {
+        "deviceId": "device-1",
+        "deviceInfo": {
+          "deviceType": "DEVICE_DISH_WASHER",
+          "modelName": "D0200",
+          "alias": "MASKED",
+          "reportable": true
+        }
+      },
+      {
+        "deviceId": "device-2",
+        "deviceInfo": {
+          "deviceType": "DEVICE_WASHER",
+          "modelName": "F_R7_D___W.A__QEUK",
+          "alias": "MASKED",
+          "reportable": true
+        }
+      },
+      {
+        "deviceId": "device-3",
+        "deviceInfo": {
+          "deviceType": "DEVICE_REFRIGERATOR",
+          "modelName": "1REB1GLPX1___",
+          "alias": "MASKED",
+          "reportable": true
+        }
+      }
+    ]
+  },
+  "per_device": {
+    "device-1": {
+      "profile": {
+        "status": 200,
+        "response": {
+          "notification": {
+            "push": [
+              "WATER_LEAK_HAS_OCCURRED",
+              "RINSE_IS_NOT_ENOUGH",
+              "SALT_REFILL_IS_NEEDED",
+              "CLEANING_IS_COMPLETE",
+              "ERROR_DURING_CLEANING"
+            ]
+          },
+          "error": [
+            "WATER_SUPPLY_ERROR",
+            "WATER_LEAKAGE_ERROR",
+            "MOTOR_ERROR",
+            "WATER_DRAIN_ERROR",
+            "BUBBLE_ERROR",
+            "TEMPERATURE_SENSOR_ERROR",
+            "HEATER_CIRCUIT_ERROR"
+          ],
+          "property": {
+            "runState": {
+              "currentState": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "ERROR",
+                    "INITIAL",
+                    "POWER_OFF",
+                    "RESERVED",
+                    "DRYING",
+                    "POWER_FAIL",
+                    "CANCEL",
+                    "RUNNING",
+                    "END",
+                    "PAUSE",
+                    "NIGHT_DRY",
+                    "RINSING"
+                  ]
+                }
+              }
+            },
+            "preference": {
+              "rinseLevel": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "RINSELEVEL_0",
+                    "RINSELEVEL_1",
+                    "RINSELEVEL_4",
+                    "RINSELEVEL_2",
+                    "RINSELEVEL_3"
+                  ]
+                }
+              },
+              "softeningLevel": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "SOFTENINGLEVEL_3",
+                    "SOFTENINGLEVEL_2",
+                    "SOFTENINGLEVEL_0",
+                    "SOFTENINGLEVEL_1",
+                    "SOFTENINGLEVEL_4"
+                  ]
+                }
+              },
+              "signalLevel": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "SIGNALLEVEL_OFF",
+                    "SIGNALLEVEL_ON"
+                  ]
+                }
+              },
+              "cleanLReminder": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "CLEANLREMINDER_OFF",
+                    "CLEANLREMINDER_ON"
+                  ]
+                }
+              },
+              "mCReminder": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "MCREMINDER_OFF",
+                    "MCREMINDER_ON"
+                  ]
+                }
+              }
+            },
+            "doorStatus": {
+              "doorState": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "CLOSE",
+                    "OPEN"
+                  ]
+                }
+              }
+            },
+            "timer": {
+              "remainHour": {
+                "type": "number",
+                "mode": [
+                  "r"
+                ]
+              },
+              "remainMinute": {
+                "type": "number",
+                "mode": [
+                  "r"
+                ]
+              },
+              "totalHour": {
+                "type": "number",
+                "mode": [
+                  "r"
+                ]
+              },
+              "totalMinute": {
+                "type": "number",
+                "mode": [
+                  "r"
+                ]
+              },
+              "relativeHourToStart": {
+                "type": "number",
+                "mode": [
+                  "r"
+                ]
+              },
+              "relativeMinuteToStart": {
+                "type": "number",
+                "mode": [
+                  "r"
+                ]
+              }
+            },
+            "dishWashingStatus": {
+              "rinseRefill": {
+                "type": "boolean",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    false,
+                    true
+                  ]
+                }
+              }
+            },
+            "dishWashingCourse": {
+              "currentDishWashingCourse": {
+                "type": "enum",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    "EXPRESS",
+                    "HEAVY",
+                    "REFRESH",
+                    "DELICATE",
+                    "TURBO",
+                    "MACHINE_CLEAN",
+                    "AUTO",
+                    "DOWNLOAD_CYCLE",
+                    "RINSE",
+                    "NORMAL"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "state": {
+        "status": 200,
+        "response": {
+          "preference": {
+            "cleanLReminder": "CLEANLREMINDER_ON",
+            "mCReminder": "MCREMINDER_ON",
+            "rinseLevel": "RINSELEVEL_1",
+            "signalLevel": "SIGNALLEVEL_OFF",
+            "softeningLevel": "SOFTENINGLEVEL_1"
+          },
+          "dishWashingCourse": {
+            "currentDishWashingCourse": "TURBO"
+          },
+          "doorStatus": {
+            "doorState": "CLOSE"
+          },
+          "timer": {
+            "totalHour": 0,
+            "totalMinute": 59,
+            "remainHour": 0,
+            "remainMinute": 44,
+            "relativeHourToStart": 0,
+            "relativeMinuteToStart": 0
+          },
+          "runState": {
+            "currentState": "RUNNING"
+          },
+          "dishWashingStatus": {
+            "rinseRefill": false
+          }
+        }
+      },
+      "energy_profile": {
+        "status": 406,
+        "error": {
+          "code": "1221",
+          "message": "Not supported product"
+        }
+      }
+    },
+    "device-2": {
+      "profile": {
+        "status": 200,
+        "response": {
+          "error": [
+            "DOOR_OPEN_ERROR",
+            "POWER_FAIL_ERROR",
+            "WATER_LEVEL_SENSOR_ERROR",
+            "WATER_DRAIN_ERROR",
+            "TEMPERATURE_SENSOR_ERROR",
+            "UNABLE_TO_LOCK_ERROR",
+            "WATER_SUPPLY_ERROR",
+            "OVERFILL_ERROR",
+            "LOCKED_MOTOR_ERROR",
+            "OUT_OF_BALANCE_ERROR"
+          ],
+          "property": [
+            {
+              "runState": {
+                "currentState": {
+                  "type": "enum",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": [
+                      "REFRESHING",
+                      "SPINNING",
+                      "INITIAL",
+                      "POWER_OFF",
+                      "RUNNING",
+                      "RINSING",
+                      "STEAM_SOFTENING",
+                      "DETECTING",
+                      "DRYING",
+                      "PAUSE",
+                      "END",
+                      "COOL_DOWN",
+                      "RINSE_HOLD",
+                      "ERROR",
+                      "SLEEP",
+                      "RESERVED"
+                    ]
+                  }
+                }
+              },
+              "operation": {
+                "washerOperationMode": {
+                  "type": "enum",
+                  "mode": [
+                    "w"
+                  ],
+                  "value": {
+                    "w": [
+                      "START",
+                      "STOP",
+                      "POWER_OFF",
+                      "WAKE_UP"
+                    ]
+                  }
+                }
+              },
+              "detergent": {
+                "detergentSetting": "NORMAL"
+              },
+              "remoteControlEnable": {
+                "remoteControlEnabled": {
+                  "type": "boolean",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": [
+                      false,
+                      true
+                    ]
+                  }
+                }
+              },
+              "timer": {
+                "remainHour": {
+                  "type": "range",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": {
+                      "max": 30,
+                      "min": 0,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "remainMinute": {
+                  "type": "range",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": {
+                      "max": 59,
+                      "min": 0,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "totalHour": {
+                  "type": "range",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": {
+                      "max": 30,
+                      "min": 0,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "totalMinute": {
+                  "type": "range",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": {
+                      "max": 59,
+                      "min": 0,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "relativeHourToStop": {
+                  "type": "range",
+                  "mode": [
+                    "r",
+                    "w"
+                  ],
+                  "value": {
+                    "r": {
+                      "max": 19,
+                      "min": 3,
+                      "step": 1,
+                      "except": []
+                    },
+                    "w": {
+                      "max": 19,
+                      "min": 3,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "relativeMinuteToStop": {
+                  "type": "range",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": {
+                      "max": 59,
+                      "min": 0,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                }
+              },
+              "location": {
+                "locationName": "MAIN"
+              },
+              "cycle": {
+                "cycleCount": {
+                  "type": "number",
+                  "mode": [
+                    "r"
+                  ]
+                }
+              }
+            }
+          ],
+          "notification": {
+            "push": [
+              "ERROR_DURING_WASHING",
+              "WASHING_IS_COMPLETE"
+            ]
+          }
+        }
+      },
+      "state": {
+        "status": 200,
+        "response": [
+          {
+            "runState": {
+              "currentState": "RUNNING"
+            },
+            "remoteControlEnable": {
+              "remoteControlEnabled": true
+            },
+            "timer": {
+              "remainHour": 1,
+              "remainMinute": 21,
+              "relativeHourToStop": 0,
+              "relativeMinuteToStop": 0,
+              "totalHour": 1,
+              "totalMinute": 30
+            },
+            "cycle": {
+              "cycleCount": 15
+            },
+            "location": {
+              "locationName": "MAIN"
+            }
+          }
+        ]
+      },
+      "energy_profile": {
+        "status": 406,
+        "error": {
+          "code": "1221",
+          "message": "Not supported product"
+        }
+      }
+    },
+    "device-3": {
+      "profile": {
+        "status": 200,
+        "response": {
+          "property": {
+            "temperature": [
+              {
+                "targetTemperature": {
+                  "type": "range",
+                  "mode": [
+                    "r",
+                    "w"
+                  ],
+                  "value": {
+                    "r": {
+                      "min": 1,
+                      "max": 7,
+                      "step": 1,
+                      "except": []
+                    },
+                    "w": {
+                      "min": 1,
+                      "max": 7,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "locationName": "FRIDGE",
+                "unit": "C"
+              },
+              {
+                "targetTemperature": {
+                  "type": "range",
+                  "mode": [
+                    "r",
+                    "w"
+                  ],
+                  "value": {
+                    "r": {
+                      "min": -23,
+                      "max": -15,
+                      "step": 1,
+                      "except": []
+                    },
+                    "w": {
+                      "min": -23,
+                      "max": -15,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "locationName": "FREEZER",
+                "unit": "C"
+              }
+            ],
+            "refrigeration": {
+              "expressMode": {
+                "type": "boolean",
+                "mode": [
+                  "r",
+                  "w"
+                ],
+                "value": {
+                  "r": [
+                    true,
+                    false
+                  ],
+                  "w": [
+                    true,
+                    false
+                  ]
+                }
+              }
+            },
+            "temperatureInUnits": [
+              {
+                "targetTemperatureC": {
+                  "type": "range",
+                  "mode": [
+                    "r",
+                    "w"
+                  ],
+                  "value": {
+                    "r": {
+                      "min": 1,
+                      "max": 7,
+                      "step": 1,
+                      "except": []
+                    },
+                    "w": {
+                      "min": 1,
+                      "max": 7,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "locationName": "FRIDGE",
+                "unit": {
+                  "type": "enum",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": [
+                      "C"
+                    ]
+                  }
+                }
+              },
+              {
+                "targetTemperatureC": {
+                  "type": "range",
+                  "mode": [
+                    "r",
+                    "w"
+                  ],
+                  "value": {
+                    "r": {
+                      "min": -23,
+                      "max": -15,
+                      "step": 1,
+                      "except": []
+                    },
+                    "w": {
+                      "min": -23,
+                      "max": -15,
+                      "step": 1,
+                      "except": []
+                    }
+                  }
+                },
+                "locationName": "FREEZER",
+                "unit": {
+                  "type": "enum",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": [
+                      "C"
+                    ]
+                  }
+                }
+              }
+            ],
+            "ecoFriendly": {
+              "ecoFriendlyMode": {
+                "type": "boolean",
+                "mode": [
+                  "r"
+                ],
+                "value": {
+                  "r": [
+                    false,
+                    true
+                  ]
+                }
+              }
+            },
+            "doorStatus": [
+              {
+                "doorState": {
+                  "type": "enum",
+                  "mode": [
+                    "r"
+                  ],
+                  "value": {
+                    "r": [
+                      "OPEN",
+                      "CLOSE"
+                    ]
+                  }
+                },
+                "locationName": "MAIN"
+              }
+            ]
+          },
+          "notification": {
+            "push": [
+              "FROZEN_IS_COMPLETE",
+              "FILTER_RESET_COMPLETE",
+              "TIME_TO_CHANGE_WATER_FILTER",
+              "TIME_TO_CHANGE_FILTER",
+              "WATER_FILTER_RESET_COMPLETE",
+              "DOOR_IS_OPEN"
+            ]
+          }
+        }
+      },
+      "state": {
+        "status": 200,
+        "response": {
+          "temperature": [
+            {
+              "targetTemperature": 3,
+              "locationName": "FRIDGE",
+              "unit": "C"
+            },
+            {
+              "targetTemperature": -18,
+              "locationName": "FREEZER",
+              "unit": "C"
+            }
+          ],
+          "temperatureInUnits": [
+            {
+              "targetTemperatureC": 3,
+              "locationName": "FRIDGE",
+              "unit": "C"
+            },
+            {
+              "targetTemperatureC": -18,
+              "locationName": "FREEZER",
+              "unit": "C"
+            }
+          ],
+          "refrigeration": {
+            "expressMode": false
+          },
+          "ecoFriendly": {
+            "ecoFriendlyMode": false
+          },
+          "doorStatus": [
+            {
+              "doorState": "CLOSE",
+              "locationName": "MAIN"
+            }
+          ]
+        }
+      },
+      "energy_profile": {
+        "status": 406,
+        "error": {
+          "code": "1221",
+          "message": "Not supported product"
+        }
+      }
+    }
+  }
+}

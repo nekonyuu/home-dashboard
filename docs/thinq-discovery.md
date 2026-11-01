@@ -88,7 +88,7 @@ Sonde `backend/scripts/discover_thinq.py` exécutée avec le PAT ; fixture anony
   (ex. `TURBO`), `dishWashingStatus.rinseRefill`, `preference` (réglages).
 - Les profils listent aussi des `notification.push` et des `error` (ex. fuite d'eau, fin de lavage) : base pour des alertes, sans doute via push/MQTT plus tard.
 
-**À faire ensuite** : relire la fixture (relue côté identifiants : seuls les alias sont masqués), puis trancher : lave-vaisselle dans le périmètre ? historique des ouvertures de porte du frigo ?
+**Décisions du propriétaire (2026-11-01)** : lave-vaisselle **dans** le périmètre ; fixture commitée ; **pas** d'historique des ouvertures de porte du frigo (porte = état courant seulement). Reste : étapes 3 à 5 du §4. Questions initiales, pour mémoire : lave-vaisselle dans le périmètre ? historique des ouvertures de porte du frigo ?
 Ensuite seulement : étapes 3 à 5 du §4.
 
 ## Sources
