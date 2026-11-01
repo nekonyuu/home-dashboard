@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useMatch } from "react-router-dom";
 
-import { useEnergy, useHealth } from "../api/hooks";
+import { useEnergy, useEquipment, useHealth } from "../api/hooks";
 import { formatAge } from "../lib/format";
+import { homeAppliances } from "../lib/home";
 import { isoDay } from "../lib/range";
-import { IconAuto, IconBolt, IconChart, IconDrop, IconFlame, IconHome, IconMoon, IconSun } from "./icons";
+import { ApplianceIcon } from "./home";
+import { IconAppliances, IconAuto, IconBolt, IconChart, IconDrop, IconFlame, IconHome, IconMoon, IconSun } from "./icons";
 import { StatusBanner } from "./StatusBanner";
 import { Status } from "./ui";
 
@@ -45,14 +47,36 @@ function useNavItems() {
   const now = Date.now();
   // la page Énergie n'apparaît que si le fournisseur déclare des consommations
   const energy = useEnergy(isoDay(now - 31 * 86_400_000), isoDay(now));
+  // la page Maison n'apparaît que si des appareils LG sont connus
+  const equipment = useEquipment();
+  const hasHome = homeAppliances(equipment.data).length > 0;
   const items = [
     { to: "/", label: "Vue d'ensemble", short: "Accueil", icon: <IconHome /> },
     { to: "/ecs", label: "Eau chaude", short: "ECS", icon: <IconDrop /> },
     { to: "/chauffage", label: "Chauffage", short: "Chauffage", icon: <IconFlame /> },
+    ...(hasHome ? [{ to: "/maison", label: "Maison", short: "Maison", icon: <IconAppliances /> }] : []),
     { to: "/historique", label: "Historique", short: "Historique", icon: <IconChart /> },
   ];
   if ((energy.data?.length ?? 0) > 0) items.push({ to: "/energie", label: "Énergie", short: "Énergie", icon: <IconBolt /> });
   return items;
+}
+
+/** Sous-menu « Maison » de la barre latérale : déplié sur les pages Maison, un lien par appareil. */
+function HomeSubNav() {
+  const inHome = useMatch("/maison/*");
+  const equipment = useEquipment();
+  const appliances = homeAppliances(equipment.data);
+  if (!inHome || appliances.length === 0) return null;
+  return (
+    <div className="subnav" role="group" aria-label="Appareils">
+      {appliances.map((a) => (
+        <NavLink key={a.id} to={`/maison/${a.id}`} className="nav-link sub">
+          <ApplianceIcon kind={a.kind} size={16} />
+          {a.label}
+        </NavLink>
+      ))}
+    </div>
+  );
 }
 
 function CollectStatus() {
@@ -83,10 +107,13 @@ export function Layout() {
         </div>
         <nav aria-label="Pages">
           {items.map((i) => (
-            <NavLink key={i.to} to={i.to} end={i.to === "/"} className="nav-link">
-              {i.icon}
-              {i.label}
-            </NavLink>
+            <div key={i.to}>
+              <NavLink to={i.to} end={i.to === "/" || i.to === "/maison"} className="nav-link">
+                {i.icon}
+                {i.label}
+              </NavLink>
+              {i.to === "/maison" && <HomeSubNav />}
+            </div>
           ))}
         </nav>
         <div className="sidebar-foot">

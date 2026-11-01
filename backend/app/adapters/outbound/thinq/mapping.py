@@ -70,7 +70,7 @@ class Semantics:
                         str(v["label"]),
                         v["type"],
                         str(v["path"]),
-                        v.get("unit"),
+                        v.get("unit") or ("min" if v["type"] == "minutes" else None),
                         v.get("true_value"),
                         v.get("hour"),
                         v.get("minute"),

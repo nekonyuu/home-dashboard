@@ -23,6 +23,10 @@ const STYLES: Record<string, SeriesStyle> = {
   energy_heating_cumulative: { color: "--series-1" },
   energy_dhw_cumulative: { color: "--series-2" },
   wifi_rssi: { color: "--series-7" },
+  // maison (LG ThinQ) : consignes en pointillé, activité des lavages en trait plein
+  fridge_setpoint: { color: "--series-1", dashed: true },
+  freezer_setpoint: { color: "--series-7", dashed: true },
+  remaining_minutes: { color: "--series-3" },
 };
 
 export function styleFor(metric: string): SeriesStyle {
