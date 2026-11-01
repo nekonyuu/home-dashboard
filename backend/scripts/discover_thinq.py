@@ -214,7 +214,9 @@ def _print_summary(out: dict[str, Any]) -> None:
         info = d.get("deviceInfo") or {}
         per = (out.get("per_device") or {}).get(d.get("deviceId"), {})
 
-        props = sorted((per.get("state") or {}).get("response") or {})
+        response = (per.get("state") or {}).get("response") or {}
+        # Certains appareils (lave-linge) renvoient une liste d'états, un par emplacement.
+        props = sorted({k for item in (response if isinstance(response, list) else [response]) for k in item})
         print(
             f"#{i} type={info.get('deviceType')} modèle={info.get('modelName')} "
             f"profil={_outcome(per.get('profile'))} état={_outcome(per.get('state'))} "

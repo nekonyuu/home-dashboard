@@ -78,10 +78,17 @@ Sonde `backend/scripts/discover_thinq.py` exécutée avec le PAT ; fixture anony
   `timer` (remain/total/relativeStop), `location`, `cycle.cycleCount`.
 - **Lave-vaisselle** (profil, hors périmètre initial) : `runState`, `doorStatus`, `timer`, `dishWashingCourse`, `dishWashingStatus.rinseRefill`, `preference`.
 - **Énergie** : aucun profil énergie (1221) sur les trois appareils : pas de consommation côté LG.
-- Les états des deux lave-* sont en 1222 (appareil hors ligne côté LG lors de la sonde).
+- Les états des deux lave-* étaient en 1222 (hors ligne) à la 1re sonde.
 
-**À faire ensuite** (reporté par le propriétaire) : relancer la sonde avec lave-linge et lave-vaisselle allumés pour obtenir de vrais
-états, relire la fixture, puis trancher : lave-vaisselle dans le périmètre ? historique des ouvertures de porte du frigo ?
+**2e sonde (appareils en ligne, tous deux en cycle `RUNNING`)** : les trois états sont lisibles, toujours pas d'énergie (1221).
+- Lave-linge : l'état est une **liste** d'un élément (un par emplacement), pas un dict. Propriétés réelles : `runState.currentState`,
+  `remoteControlEnable.remoteControlEnabled`, `timer` (remain/total/relativeStop, heures + minutes), `cycle.cycleCount`,
+  `location.locationName`. `operation` et `detergent` du profil sont absents de l'état (probablement hors cycle uniquement : à confirmer).
+- Lave-vaisselle : `runState`, `doorStatus.doorState`, `timer` (remain/total/relativeStart), `dishWashingCourse.currentDishWashingCourse`
+  (ex. `TURBO`), `dishWashingStatus.rinseRefill`, `preference` (réglages).
+- Les profils listent aussi des `notification.push` et des `error` (ex. fuite d'eau, fin de lavage) : base pour des alertes, sans doute via push/MQTT plus tard.
+
+**À faire ensuite** : relire la fixture (relue côté identifiants : seuls les alias sont masqués), puis trancher : lave-vaisselle dans le périmètre ? historique des ouvertures de porte du frigo ?
 Ensuite seulement : étapes 3 à 5 du §4.
 
 ## Sources

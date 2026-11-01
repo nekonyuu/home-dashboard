@@ -9,7 +9,7 @@ Dashboard perso de la maison (dépôt `home-dashboard`, multi-fournisseurs). Sou
 Phases 0 à 5 terminées (`PLAN.md` §12) : collecte, API, front, image Docker publiée par la CI, en service sur le NAS.
 Phase 6 (commandes) optionnelle.
 Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/discover_thinq.py` faite, adaptateur
-**pas commencé** ; état et suite dans `docs/thinq-discovery.md` §6. S'arrêter aux phases marquées ⏸ et montrer le résultat.
+**pas commencé** (2 sondes faites, appareils lisibles) ; état et suite dans `docs/thinq-discovery.md` §6. S'arrêter aux phases marquées ⏸ et montrer le résultat.
 
 ## Environnement et commandes
 - Outils gérés par **mise** (`mise.toml` : Python 3.12, Node 22, uv) : `mise install` à la racine.
