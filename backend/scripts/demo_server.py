@@ -31,7 +31,7 @@ from app.config import Settings  # noqa: E402
 from app.domain.model import Gap, GapCause  # noqa: E402
 from app.domain.values import EquipmentId, Instant, Measurement, MeasurementValue, MetricKey, PollOutcome  # noqa: E402
 from app.main import create_app  # noqa: E402
-from tests import magellan_fixture  # noqa: E402
+from tests import magellan_fixture, thinq_fixture  # noqa: E402
 
 DAY = 86400
 
@@ -82,6 +82,26 @@ def synthetic(now: int, gap: tuple[int, int]) -> list[Measurement]:
     return out
 
 
+def home_synthetic(now: int) -> list[Measurement]:
+    """Historique SYNTHÉTIQUE des appareils LG : cycles de lavage (temps restant) et consignes du frigo."""
+    rnd = random.Random(7)
+    out: list[Measurement] = []
+    start = now - 7 * DAY
+    for eq, total, hours in (("washer", 90, (9, 19)), ("dishwasher", 59, (13, 21))):
+        day = (start // DAY + 1) * DAY
+        while day + 22 * 3600 < now - 3 * 3600:
+            if rnd.random() < 0.6:
+                t0 = day + rnd.randint(*hours) * 3600
+                for k in range(0, total, 10):
+                    out.append(_m(eq, "remaining_minutes", t0 + k * 60, float(total - k), "min"))
+                out.append(_m(eq, "remaining_minutes", t0 + total * 60, 0.0, "min"))
+            day += DAY
+    for key, value in (("fridge_setpoint", 4.0), ("freezer_setpoint", -18.0)):
+        out.append(_m("fridge", key, start, value, "°C"))
+        out.append(_m("fridge", key, now - 3 * DAY, value - 1 if key == "fridge_setpoint" else value, "°C"))
+    return out
+
+
 def _m(eq: str, key: str, t: int, v: float, unit: str | None) -> Measurement:
     return Measurement(
         equipment_id=EquipmentId(eq),
@@ -101,6 +121,7 @@ async def seed(app) -> None:
     gap = (now - 2 * DAY - 5 * 3600, now - 2 * DAY + 2 * 3600)
     repo = c.collect._measurements  # démo uniquement
     await repo.append(synthetic(now, gap))
+    await repo.append(home_synthetic(now))
     await c.collect._gaps.add(Gap(Instant(gap[0]), Instant(gap[1]), GapCause.PROVIDER_ERROR))
     await c.collect._poll_log.add(PollOutcome.success(Instant(now), 120, 0))
 
@@ -113,8 +134,18 @@ def main() -> None:
     tmp = Path(tempfile.mkdtemp(prefix="pac-demo-"))
     # le client Magellan est remplacé par la fixture : aucun appel réseau
     main_module.MagellanClient = lambda *a, **k: magellan_fixture.FixtureClient()  # type: ignore[assignment]
+    # LG ThinQ aussi : fixture, avec le lave-vaisselle hors ligne pour voir l'état « éteint »
+    thinq = thinq_fixture.FixtureClient()
+    thinq.offline.add(thinq_fixture.device_id_of("DEVICE_DISH_WASHER"))
+    main_module.ThinQClient = lambda *a, **k: thinq  # type: ignore[assignment]
     settings = Settings(
-        username="demo", password="demo", db_path=tmp / "demo.db", backup_dir=tmp / "backup", static_dir=tmp / "static"
+        username="demo",
+        password="demo",
+        db_path=tmp / "demo.db",
+        backup_dir=tmp / "backup",
+        static_dir=tmp / "static",
+        thinq_pat="demo",
+        thinq_client_id="11111111-2222-4333-8444-555555555555",
     )
     app = create_app(settings, start_scheduler=False)
     original = app.router.lifespan_context

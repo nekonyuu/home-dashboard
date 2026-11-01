@@ -130,3 +130,42 @@ export const IconAuto = (p: P) => (
     <path d="M12 3.5v17a8.5 8.5 0 0 0 0-17Z" fill="currentColor" stroke="none" />
   </Svg>
 );
+
+export const IconWasher = (p: P) => (
+  <Svg {...p}>
+    <rect x="4" y="3" width="16" height="18" rx="3" />
+    <circle cx="12" cy="13.5" r="4.3" />
+    <path d="M7.5 6.5h2M14 6.5h2.5" />
+    <path d="M9.7 13.6c.8-.8 1.6-.8 2.3 0s1.6.8 2.3 0" />
+  </Svg>
+);
+export const IconDishwasher = (p: P) => (
+  <Svg {...p}>
+    <rect x="4" y="3" width="16" height="18" rx="3" />
+    <path d="M4 8h16" />
+    <path d="M7.5 5.5h.1M10 5.5h.1" />
+    <path d="M8 12.5v5M12 12.5v5M16 12.5v5M7 17.5h10" />
+  </Svg>
+);
+export const IconFridge = (p: P) => (
+  <Svg {...p}>
+    <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+    <path d="M6 10h12" />
+    <path d="M9 6v1.5M9 13v3" />
+  </Svg>
+);
+export const IconAppliances = (p: P) => (
+  <Svg {...p}>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+    <circle cx="17" cy="17" r="3.5" />
+  </Svg>
+);
+export const IconDoor = (p: P) => (
+  <Svg {...p}>
+    <path d="M6 20V5a1 1 0 0 1 1-1h8l3 2v14" />
+    <path d="M4 20h16" />
+    <path d="M13.5 12v.1" />
+  </Svg>
+);

@@ -58,7 +58,7 @@ source_modules = ["app.application"]
 forbidden_modules = ["app.adapters", "aiohttp", "aiosqlite", "fastapi", "pydantic", "yaml", "uvicorn", "starlette"]
 
 [[tool.importlinter.contracts]]
-name = "Seul adapters.outbound.magellan parle HTTP au fournisseur"
+name = "Seuls adapters.outbound.magellan et thinq parlent HTTP aux fournisseurs"
 type = "forbidden"
 source_modules = ["app.domain", "app.application", "app.adapters.inbound", "app.adapters.outbound.sqlite", "app.adapters.outbound.fake"]
 forbidden_modules = ["aiohttp"]
@@ -68,7 +68,7 @@ ignore_imports = ["app.adapters.inbound.cli -> app.main"]
 [[tool.importlinter.contracts]]
 name = "Seul adapters.outbound.sqlite touche SQLite"
 type = "forbidden"
-source_modules = ["app.domain", "app.application", "app.adapters.inbound", "app.adapters.outbound.magellan", "app.adapters.outbound.fake"]
+source_modules = ["app.domain", "app.application", "app.adapters.inbound", "app.adapters.outbound.magellan", "app.adapters.outbound.thinq", "app.adapters.outbound.fake"]
 forbidden_modules = ["aiosqlite", "sqlite3"]
 # La CLI passe par la racine de composition (app.main), seul point d'assemblage autorisé.
 ignore_imports = ["app.adapters.inbound.cli -> app.main"]
@@ -78,3 +78,8 @@ name = "Seul adapters.inbound.http importe FastAPI"
 type = "forbidden"
 source_modules = ["app.domain", "app.application", "app.adapters.outbound"]
 forbidden_modules = ["fastapi", "starlette"]
+
+[[tool.importlinter.contracts]]
+name = "Les adaptateurs fournisseurs sont indépendants les uns des autres"
+type = "independence"
+modules = ["app.adapters.outbound.magellan", "app.adapters.outbound.thinq"]

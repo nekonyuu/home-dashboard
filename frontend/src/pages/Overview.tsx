@@ -1,8 +1,12 @@
+import { Link } from "react-router-dom";
+
 import { useEquipment, useHealth, useLatest } from "../api/hooks";
 import type { Latest } from "../api/types";
+import { ApplianceIcon, metricsOf, summaryOf } from "../components/home";
 import { IconGauge, IconOutdoor, IconPump, IconThermo, IconWave } from "../components/icons";
 import { Card, ErrorState, Freshness, PageHeader, Status, type Tone, Tile, ValueText } from "../components/ui";
 import { formatAge, formatBytes, formatDuration, formatLatest, formatNumber, GAP_CAUSES } from "../lib/format";
+import { homeAppliances, isHomeKind } from "../lib/home";
 import { findMetric, indexLatest } from "../lib/latest";
 import { useTrends } from "../lib/useTrends";
 
@@ -124,7 +128,7 @@ function EquipmentCard() {
   return (
     <Card title="Équipements" subtitle="Disponibilité vue par le cloud Atlantic">
       <ul className="list">
-        {[...(data ?? [])].sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)).map((e) => (
+        {[...(data ?? [])].filter((e) => !isHomeKind(e.kind)).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)).map((e) => (
           <li key={e.id}>
             <span>
               <span className="primary">{e.label}</span>
@@ -140,6 +144,45 @@ function EquipmentCard() {
             )}
           </li>
         ))}
+      </ul>
+    </Card>
+  );
+}
+
+/** Résumé de la maison : un appareil par ligne, avec l'essentiel (cycle en cours, consignes). */
+function HomeCard({ index }: { index: Map<string, Latest> }) {
+  const { data } = useEquipment();
+  const appliances = homeAppliances(data);
+  if (appliances.length === 0) return null;
+  return (
+    <Card
+      title="Maison"
+      subtitle="Électroménager connecté LG ThinQ"
+      aside={
+        <Link to="/maison" className="card-link">
+          Détails
+        </Link>
+      }
+    >
+      <ul className="list">
+        {appliances.map((a) => {
+          const s = summaryOf(a, metricsOf(index, a.id));
+          return (
+            <li key={a.id}>
+              <Link to={`/maison/${a.id}`} className="home-row">
+                <span className="appliance-icon small">
+                  <ApplianceIcon kind={a.kind} size={16} />
+                </span>
+                <span>
+                  <span className="primary">{a.label}</span>
+                  <br />
+                  <span className="secondary">{s.headline}</span>
+                </span>
+              </Link>
+              <Status tone={s.tone}>{s.status}</Status>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
@@ -249,6 +292,7 @@ export function Overview() {
           <EquipmentCard />
           <CollectCard />
         </div>
+        <HomeCard index={index} />
         <p className="note" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <IconGauge size={14} /> Les valeurs sont celles transmises par le cloud Atlantic ; elles ne changent que
           lorsque l'installation signale une évolution.

@@ -8,8 +8,8 @@ Dashboard perso de la maison (dépôt `home-dashboard`, multi-fournisseurs). Sou
 ## État
 Phases 0 à 5 terminées (`PLAN.md` §12) : collecte, API, front, image Docker publiée par la CI, en service sur le NAS.
 Phase 6 (commandes) optionnelle.
-Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/discover_thinq.py` faite, adaptateur
-**pas commencé** (2 sondes faites, appareils lisibles) ; état et suite dans `docs/thinq-discovery.md` §6. S'arrêter aux phases marquées ⏸ et montrer le résultat.
+Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : adaptateur, config optionnelle (`THINQ_*`), pages Maison faits ;
+détails et décisions dans `docs/thinq-discovery.md`. Reste : déploiement NAS (PAT dans `.env`). S'arrêter aux phases marquées ⏸ et montrer le résultat.
 
 ## Environnement et commandes
 - Outils gérés par **mise** (`mise.toml` : Python 3.12, Node 22, uv) : `mise install` à la racine.
@@ -22,6 +22,7 @@ Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/
   - `cd frontend && npx tsc -b && npx vitest run && npm run build`
 - CLI (dans le conteneur : `docker compose exec pac-dashboard python -m app.adapters.inbound.cli ...`) :
   `discover` (1 cycle réel), `catch-up [--since AAAA-MM-JJ]`, `backup`.
+- Sonde LG ThinQ : `cd backend && set -a && source ../.env && set +a && uv run python scripts/discover_thinq.py` (même principe).
 - Sonde phase 0 (appels réels, identifiants dans `../.env`, jamais en ligne de commande) :
   `cd backend && set -a && source ../.env && set +a && uv run python scripts/discover_magellan.py` ;
   `--refixture` régénère la fixture anonymisée depuis le dump sans appel réseau.
@@ -32,6 +33,10 @@ Extension LG ThinQ (lave-linge, lave-vaisselle, frigo) : sonde `backend/scripts/
 - `backend/app/adapters/outbound/magellan/` : **seul** code qui connaît l'API Atlantic, les `capabilityId`, `productId`, slots.
   `client.py` (HTTP, jeton, erreurs), `mapping.py` (traduction), `gateway.py` (`EquipmentGateway`, `HistorySource`,
   `MetricCatalog`), `semantics.yaml` (correspondance).
+- `backend/app/adapters/outbound/thinq/` : API officielle LG ThinQ Connect (PAT), mêmes ports ; `client.py`, `mapping.py`,
+  `gateway.py`, `semantics.yaml` (chemins dans l'état, codes d'enum **persistés** : ne jamais les changer). Indépendant de Magellan
+  (contrat import-linter). `app/application/composite.py` : Atlantic = principal (son erreur fait échouer le cycle), ThinQ =
+  secondaire (sa panne est journalisée et ignorée). PAT refusé = arrêt définitif ; 1222 = appareil hors ligne (normal).
 - `backend/app/adapters/outbound/sqlite/` : **seul** accès `aiosqlite`/`sqlite3` ; migrations `migrations/NNNN_*.sql` + `PRAGMA user_version`.
 - `backend/app/adapters/outbound/fake/` : implémentations en mémoire pour les tests.
 - `backend/app/adapters/inbound/` : `http/` (**seul** import de FastAPI), `scheduler.py`, `cli.py`.
@@ -71,7 +76,9 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)
 - Vite + React + TypeScript, TanStack Query (rafraîchissement 60 s), uPlot (courbes), SVG maison (colonnes énergie).
-- Pages : `pages/Overview`, `Dhw`, `Heating`, `History`, `Energy` (bascule par usage / par tarif, mémorisée).
+- Pages : `pages/Overview`, `Dhw`, `Heating`, `History`, `Energy` (bascule par usage / par tarif, mémorisée), `Home` (`/maison`) et
+  `Appliance` (`/maison/:id`) pour l'électroménager LG : sous-menu dans la barre latérale (desktop), puces défilantes (mobile).
+  Un appareil hors ligne s'affiche en gris, jamais en rouge ; le bandeau d'état ne concerne que l'installation Atlantic.
 - Règles de design (skill dataviz) :
   - un graphique = une unité = un axe Y, jamais de double axe ; plusieurs unités → petits multiples ;
   - couleur fixe par métrique (`lib/palette.ts`, palette validée par `validate_palette.js`), consignes en pointillé ;

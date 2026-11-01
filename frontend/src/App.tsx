@@ -3,10 +3,12 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { REFRESH_MS } from "./api/hooks";
 import { Layout } from "./components/Layout";
+import { Appliance } from "./pages/Appliance";
 import { Dhw } from "./pages/Dhw";
 import { Energy } from "./pages/Energy";
 import { Heating } from "./pages/Heating";
 import { History } from "./pages/History";
+import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { Overview } from "./pages/Overview";
 
@@ -31,6 +33,8 @@ export const routes = [
       { index: true, element: <Overview /> },
       { path: "ecs", element: <Dhw /> },
       { path: "chauffage", element: <Heating /> },
+      { path: "maison", element: <Home /> },
+      { path: "maison/:id", element: <Appliance /> },
       { path: "historique", element: <History /> },
       { path: "energie", element: <Energy /> },
       { path: "*", element: <NotFound /> },

@@ -31,6 +31,10 @@ from app.adapters.outbound.sqlite import (
     StorageNotWritable,
 )
 from app.adapters.outbound.system import SystemClock
+from app.adapters.outbound.thinq.client import ThinQClient
+from app.adapters.outbound.thinq.gateway import ThinQGateway
+from app.adapters.outbound.thinq.mapping import Semantics as ThinQSemantics
+from app.application.composite import CompositeGateway
 from app.application.usecases.backup import RunBackup
 from app.application.usecases.catch_up import CatchUp
 from app.application.usecases.collect import CollectSamples
@@ -105,6 +109,7 @@ async def build(settings: Settings) -> Container:
     lock = asyncio.Lock()
     semantics = Semantics.load()
     cumulative = semantics.cumulative_metrics()
+    thinq_semantics = ThinQSemantics.load()
     gap_detector = GapDetector(settings.poll_interval)
 
     equipment = SqliteEquipmentRepository(db)
@@ -117,8 +122,26 @@ async def build(settings: Settings) -> Container:
     gateway = MagellanGateway(client, semantics, clock, SqliteCatalogueStore(db))
     history = MagellanHistorySource(client, gateway)
 
+    # LG ThinQ est optionnel et secondaire : sa panne ne bloque jamais la collecte Atlantic.
+    secondaries, catalogs = [], [gateway]
+    if settings.thinq_enabled:
+        thinq = ThinQGateway(
+            ThinQClient(
+                session,
+                settings.thinq_pat or "",
+                settings.thinq_country,
+                settings.thinq_client_id,
+                region=settings.thinq_region,
+            ),
+            thinq_semantics,
+            clock,
+        )
+        secondaries.append(thinq)
+        catalogs.append(thinq)
+    sources = CompositeGateway(gateway, secondaries, catalogs)
+
     collect = CollectSamples(
-        gateway=gateway,
+        gateway=sources,
         equipment=equipment,
         measurements=measurements,
         poll_log=poll_log,
@@ -176,7 +199,7 @@ async def build(settings: Settings) -> Container:
             clock=clock,
             gap_detector=gap_detector,
         ),
-        get_metrics=GetMetrics(gateway),
+        get_metrics=GetMetrics(sources),
         get_schedule=GetSchedule(measurements, clock, EquipmentId("room_1")),
         clock=clock,
         get_health=GetHealth(

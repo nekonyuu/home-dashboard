@@ -1,5 +1,6 @@
-import { useHealth, useLatest } from "../api/hooks";
+import { useEquipment, useHealth, useLatest } from "../api/hooks";
 import { formatAge, formatDuration, GAP_CAUSES } from "../lib/format";
+import { homeAppliances } from "../lib/home";
 import { freshest } from "../lib/latest";
 import { Alert } from "./ui";
 
@@ -7,6 +8,7 @@ import { Alert } from "./ui";
 export function StatusBanner() {
   const health = useHealth();
   const latest = useLatest();
+  const equipment = useEquipment();
 
   if (health.isError) {
     return (
@@ -36,7 +38,9 @@ export function StatusBanner() {
       </Alert>
     );
   }
-  const off = h.equipment.filter((e) => e.available === false);
+  // Un lave-linge éteint n'est pas une panne : seul l'équipement de l'installation Atlantic alerte.
+  const home = new Set(homeAppliances(equipment.data).map((e) => e.id));
+  const off = h.equipment.filter((e) => e.available === false && !home.has(e.id));
   if (off.length) {
     return (
       <Alert tone="warning" title="Équipement injoignable :">

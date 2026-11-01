@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,6 +26,14 @@ class Settings:
     retention_days_raw: int = 0
     static_dir: Path = Path("/app/static")
     log_level: str = "INFO"
+    thinq_pat: str | None = field(default=None, repr=False)
+    thinq_country: str = "FR"
+    thinq_client_id: str = field(default="", repr=False)
+    thinq_region: str = "eic"
+
+    @property
+    def thinq_enabled(self) -> bool:
+        return self.thinq_pat is not None
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
@@ -42,6 +51,16 @@ class Settings:
         level = env.get("LOG_LEVEL", "INFO").upper()
         if level not in ("DEBUG", "INFO", "WARNING", "ERROR"):
             raise ConfigError("LOG_LEVEL invalide")
+        thinq_pat = env.get("THINQ_PAT", "").strip() or None
+        thinq_client_id = env.get("THINQ_CLIENT_ID", "").strip()
+        thinq_region = env.get("THINQ_REGION", "eic").strip().lower()
+        if thinq_pat:
+            try:
+                uuid.UUID(thinq_client_id)
+            except ValueError:
+                raise ConfigError("THINQ_CLIENT_ID (uuid) est requis avec THINQ_PAT") from None
+            if thinq_region not in ("kic", "aic", "eic"):
+                raise ConfigError("THINQ_REGION doit valoir kic, aic ou eic")
         return cls(
             username=username,
             password=password,
@@ -52,6 +71,10 @@ class Settings:
             retention_days_raw=retention,
             static_dir=Path(env.get("STATIC_DIR", "/app/static")),
             log_level=level,
+            thinq_pat=thinq_pat,
+            thinq_country=env.get("THINQ_COUNTRY", "FR").strip().upper() or "FR",
+            thinq_client_id=thinq_client_id,
+            thinq_region=thinq_region,
         )
 
 
