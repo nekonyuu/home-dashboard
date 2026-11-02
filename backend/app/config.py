@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 MIN_POLL_INTERVAL = 60
+# plages d'heures creuses de l'installation (heure de Paris) ; OFF_PEAK_HOURS les remplace, « off » désactive
+DEFAULT_OFF_PEAK_HOURS = "01:38-06:38,14:08-17:08"
 
 
 class ConfigError(ValueError):
@@ -76,12 +78,14 @@ class Settings:
             thinq_country=env.get("THINQ_COUNTRY", "FR").strip().upper() or "FR",
             thinq_client_id=thinq_client_id,
             thinq_region=thinq_region,
-            off_peak_hours=parse_hour_ranges(env.get("OFF_PEAK_HOURS", "")),
+            off_peak_hours=parse_hour_ranges(env.get("OFF_PEAK_HOURS", "").strip() or DEFAULT_OFF_PEAK_HOURS),
         )
 
 
 def parse_hour_ranges(raw: str) -> tuple[tuple[int, int], ...]:
     """``"01:38-06:38,14:08-17:08"`` -> ((98, 398), (848, 1028)) en minutes depuis minuit (heure de Paris)."""
+    if raw.strip().lower() == "off":
+        return ()
     out = []
     for part in filter(None, (p.strip() for p in raw.split(","))):
         try:

@@ -71,7 +71,7 @@ détails et décisions dans `docs/thinq-discovery.md`. Reste : déploiement NAS 
 
 ## API HTTP (lecture seule, `backend/app/adapters/inbound/http/routes.py`)
 `/api/health` (toujours 200, état dans le corps), `/api/equipment`, `/api/latest`, `/api/series` (bucket 5m/1h/1d auto),
-`/api/gaps`, `/api/energy`, `/api/energy/tariff-split` (404 sans `OFF_PEAK_HOURS`), `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
+`/api/gaps`, `/api/energy`, `/api/energy/tariff-split` (404 si `OFF_PEAK_HOURS=off`), `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
 jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)
@@ -110,7 +110,7 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 ## Répartition heures creuses / pleines du chauffage
 - Compteur 57 : **électricité** consommée, en **Wh** (confirmé sur 14 jours : HC égales à ±1 kWh à celles du cloud ; le
   cloud compte en plus 5 à 25 %, surtout en HP, invisible pour ce compteur). Relevé ~toutes les 10 min, jamais de delta nul.
-- `TariffSplitter` (domaine) : delta entre deux relevés réparti au prorata du temps dans chaque plage (`OFF_PEAK_HOURS`,
+- `TariffSplitter` (domaine) : delta entre deux relevés réparti au prorata du temps dans chaque plage (`OFF_PEAK_HOURS`, défaut 01:38-06:38,14:08-17:08,
   heure de Paris) ; intervalle > 1 h = « non réparti » (jamais attribué), delta négatif ignoré. `GetTariffSplit`, rien n'est
   stocké ; ne marche que sur les points bruts (`RETENTION_DAYS_RAW`). Le compteur 59 (ECS) est trop rare pour cela.
 
