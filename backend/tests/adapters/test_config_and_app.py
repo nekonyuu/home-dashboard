@@ -15,9 +15,10 @@ def test_defaults():
 
 
 def test_off_peak_hours():
-    assert Settings.from_env(ENV).off_peak_hours == ()
-    s = Settings.from_env({**ENV, "OFF_PEAK_HOURS": "01:38-06:38, 14:08-17:08"})
-    assert s.off_peak_hours == ((98, 398), (848, 1028))
+    assert Settings.from_env(ENV).off_peak_hours == ((98, 398), (848, 1028))
+    assert Settings.from_env({**ENV, "OFF_PEAK_HOURS": ""}).off_peak_hours == ((98, 398), (848, 1028))
+    assert Settings.from_env({**ENV, "OFF_PEAK_HOURS": " 22:00-06:00 "}).off_peak_hours == ((1320, 360),)
+    assert Settings.from_env({**ENV, "OFF_PEAK_HOURS": "off"}).off_peak_hours == ()
 
 
 def test_secrets_are_not_in_repr():
