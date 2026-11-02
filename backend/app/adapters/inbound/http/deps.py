@@ -19,6 +19,7 @@ from app.application.usecases.queries import (
     GetMetrics,
     GetSchedule,
     GetSeries,
+    GetTariffSplit,
 )
 
 
@@ -31,6 +32,7 @@ class HttpApi:
     get_gaps: GetGaps
     get_energy: GetEnergy
     get_cycles: GetCycles
+    get_tariff_split: GetTariffSplit
     get_metrics: GetMetrics
     get_schedule: GetSchedule
     # renvoie un objet avec running, stopped_reason, consecutive_failures, next_delay_seconds

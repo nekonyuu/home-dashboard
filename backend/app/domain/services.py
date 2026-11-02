@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import itertools
+from bisect import bisect_right
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.domain.model import Gap, GapCause, HeatingCycle, ScheduleTransition, WeeklySchedule
@@ -398,3 +399,109 @@ def parse_transitions(raw: object) -> tuple[ScheduleTransition, ...] | None:
     except (KeyError, TypeError, ValueError):
         return None
     return tuple(sorted(out, key=lambda t: t.minute))
+
+
+@dataclass(frozen=True, slots=True)
+class TimeWindow:
+    """Plage horaire locale (heure de Paris) en minutes depuis minuit, fin exclue ; peut passer minuit."""
+
+    start: int
+    end: int
+
+    def __post_init__(self) -> None:
+        if not (0 <= self.start < 1440 and 0 <= self.end < 1440) or self.start == self.end:
+            raise ValueError("plage horaire invalide")
+
+    def contains(self, minute: float) -> bool:
+        if self.start < self.end:
+            return self.start <= minute < self.end
+        return minute >= self.start or minute < self.end
+
+
+@dataclass(frozen=True, slots=True)
+class TariffDay:
+    """Énergie d'une journée (heure de Paris) répartie entre heures creuses et pleines, en Wh.
+
+    ``unassigned_wh`` : énergie d'intervalles trop longs pour être placés dans la journée (trou, compteur muet).
+    ``covered_seconds`` : durée de la journée couverte par des intervalles répartis.
+    """
+
+    day: date
+    off_peak_wh: float
+    peak_wh: float
+    unassigned_wh: float
+    covered_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
+class TariffSplit:
+    days: tuple[TariffDay, ...]
+    # énergie répartie par heure locale (0..23), cumulée sur la période
+    hourly_off_peak_wh: tuple[float, ...]
+    hourly_peak_wh: tuple[float, ...]
+
+
+class TariffSplitter:
+    """Répartit les deltas d'un compteur cumulé entre heures creuses et heures pleines.
+
+    Le compteur n'est enregistré qu'à ses changements (environ toutes les 10 min pour le chauffage) : l'énergie d'un
+    intervalle entre deux relevés est répartie au prorata du temps passé dans chaque plage. Un intervalle plus long
+    que ``max_interval`` (trou de collecte, publication en retard) n'est pas réparti : il est compté à part, jamais
+    attribué à une plage inventée, sauf s'il ne porte aucune énergie (PAC à l'arrêt : 0 Wh, connu).
+    Un delta négatif (remise à zéro) est ignoré.
+    """
+
+    def __init__(self, off_peak: Sequence[TimeWindow], max_interval: int = 3600) -> None:
+        self._off_peak = tuple(off_peak)
+        self._max = max_interval
+        edges = {0, 1440, *range(60, 1440, 60)}
+        for w in self._off_peak:
+            edges.update((w.start, w.end))
+        self._edges = sorted(edges)  # minutes locales où la classification peut changer
+
+    def split(
+        self, readings: Sequence[Measurement], *, prior: Measurement | None, start: Instant, end: Instant
+    ) -> TariffSplit:
+        points = sorted((m for m in readings if m.value.number is not None), key=lambda m: m.instant)
+        if prior is not None and prior.value.number is not None:
+            points.insert(0, prior)
+        days: dict[date, list[float]] = {}
+        hourly = [[0.0, 0.0] for _ in range(24)]
+        for a, b in itertools.pairwise(points):
+            t0, t1 = a.instant.epoch, b.instant.epoch
+            delta = (b.value.number or 0.0) - (a.value.number or 0.0)
+            if t1 <= t0 or delta < 0:
+                continue
+            # un compteur immobile, même longtemps, dit sans ambiguïté qu'il n'y a rien à répartir
+            assigned = t1 - t0 <= self._max or delta == 0
+            lo, hi = max(t0, start.epoch), min(t1, end.epoch)
+            for seg_start, seg_end, local in self._segments(lo, hi):
+                wh = delta * (seg_end - seg_start) / (t1 - t0)
+                acc = days.setdefault(local.date(), [0.0, 0.0, 0.0, 0.0])
+                if not assigned:
+                    acc[2] += wh
+                    continue
+                minute = local.hour * 60 + local.minute + local.second / 60
+                slot = 0 if any(w.contains(minute) for w in self._off_peak) else 1
+                acc[slot] += wh
+                acc[3] += seg_end - seg_start
+                hourly[local.hour][slot] += wh
+        return TariffSplit(
+            days=tuple(
+                TariffDay(d, round(v[0], 3), round(v[1], 3), round(v[2], 3), int(v[3])) for d, v in sorted(days.items())
+            ),
+            hourly_off_peak_wh=tuple(round(h[0], 3) for h in hourly),
+            hourly_peak_wh=tuple(round(h[1], 3) for h in hourly),
+        )
+
+    def _segments(self, lo: int, hi: int) -> Iterable[tuple[int, int, datetime]]:
+        """Découpe ``[lo, hi[`` aux heures pleines locales, à minuit et aux bornes des plages."""
+        t = lo
+        while t < hi:
+            local = datetime.fromtimestamp(t, PARIS)
+            seconds = local.hour * 3600 + local.minute * 60 + local.second
+            edge = self._edges[bisect_right(self._edges, seconds / 60)]
+            # les changements d'heure tombent sur une heure pleine (une borne) : décalage constant jusqu'à la borne
+            nxt = min(hi, t + edge * 60 - seconds)
+            yield t, nxt, local
+            t = nxt

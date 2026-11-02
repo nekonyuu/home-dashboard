@@ -96,6 +96,12 @@ export interface EnergyDay {
   cost: number | null;
 }
 
+export interface TariffSplit {
+  off_peak_hours: string[];
+  days: { day: string; off_peak_kwh: number; peak_kwh: number; unassigned_kwh: number; covered_seconds: number }[];
+  hourly: { hour: number; off_peak_kwh: number; peak_kwh: number }[];
+}
+
 export interface Cycle {
   start: number;
   end: number | null;

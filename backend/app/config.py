@@ -30,6 +30,7 @@ class Settings:
     thinq_country: str = "FR"
     thinq_client_id: str = field(default="", repr=False)
     thinq_region: str = "eic"
+    off_peak_hours: tuple[tuple[int, int], ...] = ()
 
     @property
     def thinq_enabled(self) -> bool:
@@ -75,7 +76,29 @@ class Settings:
             thinq_country=env.get("THINQ_COUNTRY", "FR").strip().upper() or "FR",
             thinq_client_id=thinq_client_id,
             thinq_region=thinq_region,
+            off_peak_hours=parse_hour_ranges(env.get("OFF_PEAK_HOURS", "")),
         )
+
+
+def parse_hour_ranges(raw: str) -> tuple[tuple[int, int], ...]:
+    """``"01:38-06:38,14:08-17:08"`` -> ((98, 398), (848, 1028)) en minutes depuis minuit (heure de Paris)."""
+    out = []
+    for part in filter(None, (p.strip() for p in raw.split(","))):
+        try:
+            a, b = (_minute(x) for x in part.split("-"))
+        except ValueError:
+            raise ConfigError(f"OFF_PEAK_HOURS : plage invalide « {part} » (attendu HH:MM-HH:MM)") from None
+        if a == b:
+            raise ConfigError(f"OFF_PEAK_HOURS : plage vide « {part} »")
+        out.append((a, b))
+    return tuple(out)
+
+
+def _minute(text: str) -> int:
+    h, m = text.strip().split(":")
+    if len(m) != 2 or not (0 <= int(h) < 24 and 0 <= int(m) < 60):
+        raise ValueError(text)
+    return int(h) * 60 + int(m)
 
 
 def _int(env: Mapping[str, str], name: str, default: int) -> int:

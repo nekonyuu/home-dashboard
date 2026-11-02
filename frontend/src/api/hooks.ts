@@ -39,6 +39,10 @@ export function useSeries(requests: SeriesRequest[], range: Range) {
 export const useEnergy = (from: string, to: string) =>
   useQuery({ queryKey: ["energy", from, to], queryFn: () => api.energy(from, to) });
 
+// 404 = plages d'heures creuses non configurées : la carte est simplement masquée
+export const useTariffSplit = (from: string, to: string) =>
+  useQuery({ queryKey: ["tariff-split", from, to], queryFn: () => api.tariffSplit(from, to), retry: false });
+
 export const useCycles = (from: number, to: number) =>
   useQuery({ queryKey: ["cycles", from, to], queryFn: () => api.cycles(from, to), placeholderData: keepPreviousData });
 

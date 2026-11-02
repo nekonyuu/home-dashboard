@@ -77,6 +77,16 @@ def synthetic(now: int, gap: tuple[int, int]) -> list[Measurement]:
                 out.append(_m("heat_pump", "energy_dhw_cumulative", day + 3600 + k * 1800, round(counter), "Wh"))
             out.append(_m("dhw", "dhw_status", day + 4 * 3600, 0, None))
         day += DAY
+    # compteur chauffage (Wh) SYNTHÉTIQUE : relevé toutes les 10 min, surtout pendant les heures creuses
+    heat = 102_040.0  # suite de la valeur de la fixture
+    t = start
+    while t < now - 3600:
+        local = (t + 3600) % DAY / 3600  # approximation de l'heure de Paris, suffisante pour une démo
+        rate = 2600 if 1.6 <= local < 6.6 else 1500 if 14.1 <= local < 17.1 else 120
+        heat += rate / 6 * rnd.uniform(0.6, 1.2)
+        if not (gap[0] <= t < gap[1]):
+            out.append(_m("heat_pump", "energy_heating_cumulative", t, round(heat), "Wh"))
+        t += 600
     for eq, key, value in (("dhw", "dhw_setpoint", 55.0), ("room_1", "room_setpoint", 19.0), ("circuit_1", "flow_setpoint", 20.0)):
         out.append(_m(eq, key, start, value, "°C"))
     return out
@@ -146,6 +156,7 @@ def main() -> None:
         static_dir=tmp / "static",
         thinq_pat="demo",
         thinq_client_id="11111111-2222-4333-8444-555555555555",
+        off_peak_hours=((98, 398), (848, 1028)),
     )
     app = create_app(settings, start_scheduler=False)
     original = app.router.lifespan_context
