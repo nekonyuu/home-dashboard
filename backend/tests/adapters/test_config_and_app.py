@@ -14,6 +14,12 @@ def test_defaults():
     assert (s.poll_interval, s.db_path, s.backup_keep, s.retention_days_raw) == (300, Path("/data/pac.db"), 14, 0)
 
 
+def test_off_peak_hours():
+    assert Settings.from_env(ENV).off_peak_hours == ()
+    s = Settings.from_env({**ENV, "OFF_PEAK_HOURS": "01:38-06:38, 14:08-17:08"})
+    assert s.off_peak_hours == ((98, 398), (848, 1028))
+
+
 def test_secrets_are_not_in_repr():
     assert "secret" not in repr(Settings.from_env(ENV)) and "user@" not in repr(Settings.from_env(ENV))
 
@@ -27,6 +33,9 @@ def test_secrets_are_not_in_repr():
         {"BACKUP_KEEP": "0"},
         {"RETENTION_DAYS_RAW": "-1"},
         {"LOG_LEVEL": "LOUD"},
+        {"OFF_PEAK_HOURS": "1h38-6h38"},
+        {"OFF_PEAK_HOURS": "25:00-06:00"},
+        {"OFF_PEAK_HOURS": "06:00-06:00"},
     ],
 )
 def test_invalid_config(override):

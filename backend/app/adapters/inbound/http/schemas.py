@@ -115,6 +115,26 @@ class EnergyOut(BaseModel):
     cost: float | None
 
 
+class TariffDayOut(BaseModel):
+    day: str
+    off_peak_kwh: float
+    peak_kwh: float
+    unassigned_kwh: float
+    covered_seconds: int
+
+
+class TariffHourOut(BaseModel):
+    hour: int
+    off_peak_kwh: float
+    peak_kwh: float
+
+
+class TariffSplitOut(BaseModel):
+    off_peak_hours: list[str]
+    days: list[TariffDayOut]
+    hourly: list[TariffHourOut]
+
+
 class CycleOut(BaseModel):
     start: int
     end: int | None

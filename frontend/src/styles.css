@@ -1237,3 +1237,14 @@ select {
 .card-col > .list {
   margin-bottom: 12px;
 }
+
+.split-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-bottom: 12px;
+}
+.split-value {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}

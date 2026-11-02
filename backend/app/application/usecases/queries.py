@@ -6,7 +6,7 @@ import json
 from collections import Counter
 from collections.abc import Collection
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from app.application.ports import (
     Clock,
@@ -21,10 +21,14 @@ from app.application.ports import (
 )
 from app.domain.model import Equipment, Gap, HeatingCycle, WeeklySchedule
 from app.domain.services import (
+    PARIS,
     CycleDetector,
     GapDetector,
     ScheduleState,
     SeriesAggregator,
+    TariffSplit,
+    TariffSplitter,
+    TimeWindow,
     parse_transitions,
     schedule_state,
 )
@@ -214,6 +218,42 @@ class GetEnergy:
 
     async def run(self, since: date, until: date) -> list[EnergyDay]:
         return sorted(await self._energy.range(since, until), key=lambda d: d.key)
+
+
+class GetTariffSplit:
+    """Énergie d'un compteur cumulé répartie par jour entre heures creuses et pleines (dérivée, jamais stockée)."""
+
+    def __init__(
+        self,
+        *,
+        source: tuple[EquipmentId, MetricKey],
+        off_peak: Collection[TimeWindow],
+        measurements: MeasurementRepository,
+        clock: Clock,
+    ) -> None:
+        self._source = source
+        self._off_peak = tuple(off_peak)
+        self._measurements = measurements
+        self._clock = clock
+
+    @property
+    def windows(self) -> tuple[TimeWindow, ...]:
+        return self._off_peak
+
+    async def run(self, since: date, until: date) -> TariffSplit | None:
+        """``None`` si aucune plage d'heures creuses n'est configurée."""
+        if not self._off_peak:
+            return None
+        start = Instant(int(datetime(since.year, since.month, since.day, tzinfo=PARIS).timestamp()))
+        after = until + timedelta(days=1)
+        end = Instant(
+            min(int(datetime(after.year, after.month, after.day, tzinfo=PARIS).timestamp()), self._clock.now().epoch)
+        )
+        eq, key = self._source
+        # l'intervalle qui chevauche la fin demande le relevé suivant
+        readings = await self._measurements.range(eq, key, start, Instant(end.epoch + 86400))
+        prior = await self._measurements.last_recorded(eq, key, start)
+        return TariffSplitter(self._off_peak).split(readings, prior=prior, start=start, end=end)
 
 
 @dataclass(frozen=True, slots=True)

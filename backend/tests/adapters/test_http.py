@@ -33,9 +33,10 @@ from app.application.usecases.queries import (
     GetMetrics,
     GetSchedule,
     GetSeries,
+    GetTariffSplit,
 )
 from app.domain.model import Equipment, Gap, GapCause
-from app.domain.services import GapDetector
+from app.domain.services import GapDetector, TimeWindow
 from app.domain.values import (
     EnergyDay,
     EquipmentId,
@@ -106,6 +107,12 @@ class World:
                 poll_log=self.poll_log,
                 clock=self.clock,
                 gap_detector=detector,
+            ),
+            get_tariff_split=GetTariffSplit(
+                source=(DHW, COUNTER),
+                off_peak=[TimeWindow(98, 398), TimeWindow(848, 1028)],
+                measurements=self.measurements,
+                clock=self.clock,
             ),
             get_metrics=GetMetrics(self.catalog),
             get_schedule=GetSchedule(self.measurements, self.clock, ROOM),
@@ -455,3 +462,22 @@ def test_schedule_current_next_mode_and_override(world, client):
     assert body["next"] == {"at": paris(2026, 10, 19, 4).epoch, "setpoint": 21.0}
     assert body["override"] == {"active": True, "remaining_minutes": 45}
     assert body["updated_at"] == NOW.epoch - 60
+
+
+def test_tariff_split(world, client):
+    t = paris(2026, 10, 17, 2).epoch
+    run(world.measurements.append([m(t, 1000, key=COUNTER), m(t + 600, 1600, key=COUNTER)]))
+    body = client.get("/api/energy/tariff-split", params={"from": "2026-10-17", "to": "2026-10-18"}).json()
+    assert body["off_peak_hours"] == ["01:38-06:38", "14:08-17:08"]
+    assert body["days"] == [
+        {"day": "2026-10-17", "off_peak_kwh": 0.6, "peak_kwh": 0.0, "unassigned_kwh": 0.0, "covered_seconds": 600}
+    ]
+    assert body["hourly"][2] == {"hour": 2, "off_peak_kwh": 0.6, "peak_kwh": 0.0}
+    assert client.get("/api/energy/tariff-split", params={"from": "2026-10-18", "to": "2026-10-17"}).status_code == 400
+
+
+def test_tariff_split_not_configured(world, client):
+    world.api.get_tariff_split = GetTariffSplit(
+        source=(DHW, COUNTER), off_peak=[], measurements=world.measurements, clock=world.clock
+    )
+    assert client.get("/api/energy/tariff-split").status_code == 404

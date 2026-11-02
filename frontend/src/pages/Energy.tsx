@@ -4,6 +4,7 @@ import { useEnergy } from "../api/hooks";
 import type { EnergyDay } from "../api/types";
 import { type Column, ColumnChart } from "../components/ColumnChart";
 import { IconChart, IconTable } from "../components/icons";
+import { TariffSplitCard } from "../components/TariffSplitCard";
 import { Card, ErrorState, PageHeader, Segmented } from "../components/ui";
 import { formatDay, formatNumber } from "../lib/format";
 import { ENERGY_CATEGORY } from "../lib/palette";
@@ -214,6 +215,7 @@ export function Energy() {
             Atlantic fournit environ 32 jours glissants ; le dashboard les conserve au-delà.
           </p>
         </Card>
+        <TariffSplitCard from={from} to={to} />
       </div>
     </>
   );

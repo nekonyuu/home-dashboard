@@ -64,6 +64,7 @@ fichier d'environnement, `TZ=Europe/Paris`, redémarrage « sauf arrêt »).
 | `COZYTOUCH_USERNAME` / `COZYTOUCH_PASSWORD` | identifiants de l'app Cozytouch | requis |
 | `THINQ_PAT` / `THINQ_COUNTRY` / `THINQ_CLIENT_ID` | optionnel : LG ThinQ (lave-linge, lave-vaisselle, frigo). PAT du site développeur LG, code pays, uuid4 généré une fois | désactivé sans `THINQ_PAT` |
 | `THINQ_REGION` | `kic`, `aic` ou `eic` | `eic` (Europe) |
+| `OFF_PEAK_HOURS` | plages d'heures creuses, heure de Paris, ex. `01:38-06:38,14:08-17:08` : répartition HC/HP du chauffage (page Énergie) | désactivé |
 | `POLL_INTERVAL_SECONDS` | période de collecte (minimum 60) | `300` |
 | `DB_PATH` | base SQLite | `/data/pac.db` |
 | `BACKUP_DIR` / `BACKUP_KEEP` | sauvegardes quotidiennes et nombre conservé | `/data/backup` / `14` |

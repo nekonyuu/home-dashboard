@@ -58,7 +58,7 @@ détails et décisions dans `docs/thinq-discovery.md`. Reste : déploiement NAS 
 - Énergie : `GET /magellan/setups/<id>/consumptions?periodicity=daily` = ~32 jours glissants, kWh et coût par jour.
   **Catégorie 1 = chauffage, 2 = eau chaude** (confirmé par le propriétaire). `mode` 1 = heures pleines, 2 = heures creuses.
   C'est la seule source de catch-up (niveau C) ; le rapport distingue jours reçus et jours écrits (relance idempotente = 0 écrit).
-- Compteurs cumulés 57 (chauffage) et 59 (ECS) : unité supposée **Wh** (corrigée dans `semantics.yaml`), à confirmer.
+- Compteurs cumulés 57 (chauffage) et 59 (ECS) : **Wh** ; confirmé pour 57 (électricité consommée), supposé pour 59.
 - Erreurs : `invalid_grant` → `CredentialsRejected` (**arrêt définitif** des tentatives, risque de bannissement) ;
   429 → `ProviderThrottled` (`Retry-After`, sinon ≥ 300 s) ; 5xx/timeout → `ProviderUnavailable` (backoff ≤ 1 h) ;
   401 → un seul renouvellement du jeton.
@@ -71,7 +71,7 @@ détails et décisions dans `docs/thinq-discovery.md`. Reste : déploiement NAS 
 
 ## API HTTP (lecture seule, `backend/app/adapters/inbound/http/routes.py`)
 `/api/health` (toujours 200, état dans le corps), `/api/equipment`, `/api/latest`, `/api/series` (bucket 5m/1h/1d auto),
-`/api/gaps`, `/api/energy`, `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
+`/api/gaps`, `/api/energy`, `/api/energy/tariff-split` (404 sans `OFF_PEAK_HOURS`), `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
 jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)
@@ -107,6 +107,13 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
 - Base en UTC (epoch s) ; journées calculées avec `zoneinfo("Europe/Paris")`.
 - Un seul writer SQLite (un seul worker uvicorn) ; pas d'Alembic, pas de framework DI, pas de dépendance non justifiée.
 
+## Répartition heures creuses / pleines du chauffage
+- Compteur 57 : **électricité** consommée, en **Wh** (confirmé sur 14 jours : HC égales à ±1 kWh à celles du cloud ; le
+  cloud compte en plus 5 à 25 %, surtout en HP, invisible pour ce compteur). Relevé ~toutes les 10 min, jamais de delta nul.
+- `TariffSplitter` (domaine) : delta entre deux relevés réparti au prorata du temps dans chaque plage (`OFF_PEAK_HOURS`,
+  heure de Paris) ; intervalle > 1 h = « non réparti » (jamais attribué), delta négatif ignoré. `GetTariffSplit`, rien n'est
+  stocké ; ne marche que sur les points bruts (`RETENTION_DAYS_RAW`). Le compteur 59 (ECS) est trop rare pour cela.
+
 ## Cycles de chauffe ECS
 - Source : `dhw_status` (capacité 99, vanne 3 voies : 0 = chauffage, 1 = ECS). Une chauffe = de la bascule à 1 au retour à 0
   (14 cycles de 8 à 58 min sur 13 jours, surtout vers 14 h). `CycleDetector` (domaine) les dérive à la demande
@@ -121,7 +128,7 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
   `DHW_vV40Maximal` (270), `DHW_rV40StateOfChargeHMI` (271) et `DHW_vTankCapacity` (258), mais l'installation ne les expose pas
   (`DHW_stEstimationCapabilities` = 3 : seules température et débit d'eau sont estimées, pas `Tank_V40`). Seule la consigne de
   charge V40 (105906, en %) est lue. À revérifier si Atlantic active l'estimation.
-- Unité des compteurs 57/59 (Wh supposé) : comparer leurs deltas aux consommations journalières.
+- Unité du compteur 59 (Wh supposé, 57 confirmé) ; origine de l'écart compteur 57 / cloud en heures pleines.
 - Libellés des mesures vides via l'API tant qu'aucun poll n'a réussi depuis le démarrage (`MetricCatalog` sans réseau).
 
 ## Programme de chauffage (lecture seule)

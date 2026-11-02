@@ -50,10 +50,11 @@ from app.application.usecases.queries import (
     GetMetrics,
     GetSchedule,
     GetSeries,
+    GetTariffSplit,
 )
 from app.config import ConfigError, Settings
 from app.domain import events
-from app.domain.services import GapDetector
+from app.domain.services import GapDetector, TimeWindow
 from app.domain.values import EquipmentId, MetricKey
 
 log = logging.getLogger("app")
@@ -88,6 +89,7 @@ class Container:
     get_gaps: GetGaps
     get_energy: GetEnergy
     get_cycles: GetCycles
+    get_tariff_split: GetTariffSplit
     get_schedule: GetSchedule
     get_health: GetHealth
     get_metrics: GetMetrics
@@ -199,6 +201,12 @@ async def build(settings: Settings) -> Container:
             clock=clock,
             gap_detector=gap_detector,
         ),
+        get_tariff_split=GetTariffSplit(
+            source=(EquipmentId("heat_pump"), MetricKey("energy_heating_cumulative")),
+            off_peak=[TimeWindow(a, b) for a, b in settings.off_peak_hours],
+            measurements=measurements,
+            clock=clock,
+        ),
         get_metrics=GetMetrics(sources),
         get_schedule=GetSchedule(measurements, clock, EquipmentId("room_1")),
         clock=clock,
@@ -244,6 +252,7 @@ def create_app(settings: Settings | None = None, *, start_scheduler: bool = True
             get_gaps=container.get_gaps,
             get_energy=container.get_energy,
             get_cycles=container.get_cycles,
+            get_tariff_split=container.get_tariff_split,
             get_metrics=container.get_metrics,
             get_schedule=container.get_schedule,
             scheduler_state=lambda: container.scheduler.state,

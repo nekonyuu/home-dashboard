@@ -26,6 +26,9 @@ from app.adapters.inbound.http.schemas import (
     ScheduleDayOut,
     ScheduleOut,
     SeriesOut,
+    TariffDayOut,
+    TariffHourOut,
+    TariffSplitOut,
     TransitionOut,
 )
 from app.application.ports import MetricInfo
@@ -40,6 +43,7 @@ DAY = 86400
 MAX_RANGE_DAYS = {BucketSize.FIVE_MINUTES: 7, BucketSize.HOUR: 400, BucketSize.DAY: 3660}
 MAX_ENERGY_DAYS = 3660
 MAX_CYCLE_DAYS = 400
+MAX_TARIFF_DAYS = 400
 
 Api = Annotated[HttpApi, Depends(api)]
 
@@ -274,6 +278,44 @@ async def energy(
         EnergyOut(day=d.day.isoformat(), category=d.category, tariff=str(d.tariff), kwh=d.kwh, cost=d.cost)
         for d in await a.get_energy.run(since, until)
     ]
+
+
+@router.get("/energy/tariff-split", response_model=TariffSplitOut)
+async def tariff_split(
+    a: Api, from_: Annotated[str | None, Query(alias="from")] = None, to: str | None = None
+) -> TariffSplitOut:
+    """Chauffage réparti heures creuses / pleines à partir du compteur cumulé (404 sans ``OFF_PEAK_HOURS``)."""
+    today = datetime.fromtimestamp(a.clock.now().epoch, PARIS).date()
+    until = parse_day(to, "to", today)
+    since = parse_day(from_, "from", until - timedelta(days=30))
+    if since > until:
+        raise bad_request("« from » doit être antérieur ou égal à « to »")
+    if (until - since).days + 1 > MAX_TARIFF_DAYS:
+        raise bad_request(f"période trop longue (maximum {MAX_TARIFF_DAYS} jours)")
+    split = await a.get_tariff_split.run(since, until)
+    if split is None:
+        raise HTTPException(status_code=404, detail="plages d'heures creuses non configurées (OFF_PEAK_HOURS)")
+    kwh = lambda wh: round(wh / 1000, 3)  # noqa: E731
+    return TariffSplitOut(
+        off_peak_hours=[
+            f"{w.start // 60:02d}:{w.start % 60:02d}-{w.end // 60:02d}:{w.end % 60:02d}"
+            for w in a.get_tariff_split.windows
+        ],
+        days=[
+            TariffDayOut(
+                day=d.day.isoformat(),
+                off_peak_kwh=kwh(d.off_peak_wh),
+                peak_kwh=kwh(d.peak_wh),
+                unassigned_kwh=kwh(d.unassigned_wh),
+                covered_seconds=d.covered_seconds,
+            )
+            for d in split.days
+        ],
+        hourly=[
+            TariffHourOut(hour=h, off_peak_kwh=kwh(split.hourly_off_peak_wh[h]), peak_kwh=kwh(split.hourly_peak_wh[h]))
+            for h in range(24)
+        ],
+    )
 
 
 @router.get("/cycles", response_model=list[CycleOut])
