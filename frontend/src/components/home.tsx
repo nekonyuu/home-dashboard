@@ -3,7 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 
 import type { Equipment, Latest } from "../api/types";
 import { formatAge } from "../lib/format";
-import { cyclePhase, cycleProgress, formatEndTime, formatMinutes, num, PHASE_TONE, type CyclePhase } from "../lib/home";
+import { cyclePhase, cycleProgress, delayedStartMinutes, formatEndTime, formatMinutes, num, PHASE_TONE, RESERVED, type CyclePhase } from "../lib/home";
 import { IconAppliances, IconDishwasher, IconFridge, IconWasher } from "./icons";
 import { Status, type Tone } from "./ui";
 
@@ -65,6 +65,19 @@ export function washerSummary(e: Equipment, get: (m: string) => Latest | undefin
       progress: cycleProgress(remaining, total),
       detail: `Fin vers ${formatEndTime(state.polled_at, remaining)}`,
     };
+  }
+  if (state?.value === RESERVED) {
+    const wait = delayedStartMinutes(get, total);
+    if (wait !== null) {
+      return {
+        tone: "info",
+        status: label,
+        headline: wait > 0 ? `Départ dans ${formatMinutes(wait)}` : "Départ imminent",
+        progress: null,
+        detail: `Démarrage vers ${formatEndTime(state.polled_at, wait)}`,
+      };
+    }
+    return { tone: "info", status: label, headline: label, progress: null, detail: null };
   }
   return { tone: PHASE_TONE[phase], status: label, headline: PHASE_LABEL[phase], progress: null, detail: null };
 }

@@ -65,3 +65,18 @@ export function formatEndTime(readAt: number, remainingMinutes: number): string 
 export function num(l: Latest | undefined): number | null {
   return l && typeof l.value === "number" ? l.value : null;
 }
+
+/** Code d'état « Départ différé » (lave-linge et lave-vaisselle). */
+export const RESERVED = 9;
+
+/**
+ * Minutes avant le déclenchement d'un départ différé. Le lave-vaisselle donne directement le délai avant départ ;
+ * le lave-linge donne le délai avant la **fin** : le départ est ce délai moins la durée du cycle.
+ */
+export function delayedStartMinutes(get: (m: string) => Latest | undefined, total: number | null): number | null {
+  const start = num(get("delay_start_minutes"));
+  if (start !== null) return start;
+  const end = num(get("delay_end_minutes"));
+  if (end === null) return null;
+  return Math.max(end - (total ?? 0), 0);
+}

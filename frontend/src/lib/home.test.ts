@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Equipment } from "../api/types";
-import { cyclePhase, cycleProgress, formatMinutes, homeAppliances, isHomeKind } from "./home";
+import { cyclePhase, cycleProgress, delayedStartMinutes, formatMinutes, homeAppliances, isHomeKind } from "./home";
 
 const eq = (id: string, kind: string): Equipment => ({ id, label: id, kind, available: true, last_seen: 0, metrics: [] });
 
@@ -52,5 +52,19 @@ describe("homeAppliances", () => {
   });
   it("renvoie une liste vide sans données", () => {
     expect(homeAppliances(undefined)).toEqual([]);
+  });
+});
+
+describe("delayedStartMinutes", () => {
+  const l = (v: number) => ({ value: v }) as never;
+  it("lave-vaisselle : délai avant départ direct", () => {
+    expect(delayedStartMinutes((m) => (m === "delay_start_minutes" ? l(95) : undefined), 60)).toBe(95);
+  });
+  it("lave-linge : délai avant fin moins durée du cycle", () => {
+    expect(delayedStartMinutes((m) => (m === "delay_end_minutes" ? l(300) : undefined), 90)).toBe(210);
+    expect(delayedStartMinutes((m) => (m === "delay_end_minutes" ? l(30) : undefined), 90)).toBe(0);
+  });
+  it("sans donnée : null", () => {
+    expect(delayedStartMinutes(() => undefined, 60)).toBeNull();
   });
 });

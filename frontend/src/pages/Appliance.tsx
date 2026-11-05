@@ -13,7 +13,7 @@ import {
 import { IconClock, IconDoor, IconThermo } from "../components/icons";
 import { ErrorState, Freshness, PageHeader, Segmented, Status, Tile } from "../components/ui";
 import { formatAge } from "../lib/format";
-import { homeAppliances } from "../lib/home";
+import { RESERVED, homeAppliances } from "../lib/home";
 import { indexLatest } from "../lib/latest";
 import { usePreset } from "../lib/usePreset";
 
@@ -63,6 +63,14 @@ function Tiles({ equipment, get, loading }: { equipment: Equipment; get: Get; lo
   return (
     <div className="grid-tiles">
       <Tile label="État du cycle" value={only(get("run_state"))} loading={loading} />
+      {get("run_state")?.value === RESERVED && (
+        <Tile
+          label={isDish ? "Départ différé dans" : "Fin différée dans"}
+          icon={<IconClock size={16} />}
+          value={only(get(isDish ? "delay_start_minutes" : "delay_end_minutes"))}
+          loading={loading}
+        />
+      )}
       <Tile label="Temps restant" icon={<IconClock size={16} />} value={only(get("remaining_minutes"))} loading={loading} />
       <Tile label="Durée du cycle" value={only(get("total_minutes"))} loading={loading} />
       {isDish ? (
