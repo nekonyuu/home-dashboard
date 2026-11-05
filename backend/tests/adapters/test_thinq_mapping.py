@@ -83,6 +83,14 @@ def test_dishwasher_enum_course_and_door(semantics):
     assert ms["remaining_minutes"].value.number == timer["remainHour"] * 60 + timer["remainMinute"]
 
 
+def test_delayed_start_timers_are_exposed(semantics):
+    equipment = by_id(resolved_with_state(semantics))
+    washer = {str(m.metric_key): m for m in measurements_of(equipment["washer"], NOW)}
+    dish = {str(m.metric_key): m for m in measurements_of(equipment["dishwasher"], NOW)}
+    assert washer["delay_end_minutes"].value.number == 0
+    assert dish["delay_start_minutes"].value.number == 0
+
+
 def test_measurements_are_not_provider_timestamped(semantics):
     for r in resolved_with_state(semantics):
         for m in measurements_of(r, NOW):

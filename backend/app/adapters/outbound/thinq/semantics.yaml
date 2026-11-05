@@ -39,6 +39,7 @@ equipment:
           SLEEP: [15, "Veille"]
       remaining_minutes: {label: "Temps restant", type: minutes, path: timer, hour: remainHour, minute: remainMinute}
       total_minutes: {label: "Durée du cycle", type: minutes, path: timer, hour: totalHour, minute: totalMinute}
+      delay_end_minutes: {label: "Fin différée dans", type: minutes, path: timer, hour: relativeHourToStop, minute: relativeMinuteToStop}
       cycle_count: {label: "Cycles effectués", type: number, path: cycle.cycleCount}
       remote_control: {label: "Pilotage à distance", type: bool, path: remoteControlEnable.remoteControlEnabled}
 
@@ -67,6 +68,7 @@ equipment:
           NIGHT_DRY: [22, "Séchage nocturne"]
       remaining_minutes: {label: "Temps restant", type: minutes, path: timer, hour: remainHour, minute: remainMinute}
       total_minutes: {label: "Durée du cycle", type: minutes, path: timer, hour: totalHour, minute: totalMinute}
+      delay_start_minutes: {label: "Départ différé dans", type: minutes, path: timer, hour: relativeHourToStart, minute: relativeMinuteToStart}
       door_open: {label: "Porte ouverte", type: bool, path: doorStatus.doorState, true_value: OPEN}
       course:
         label: "Programme"
