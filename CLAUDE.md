@@ -71,7 +71,7 @@ détails et décisions dans `docs/thinq-discovery.md`. Reste : déploiement NAS 
 
 ## API HTTP (lecture seule, `backend/app/adapters/inbound/http/routes.py`)
 `/api/health` (toujours 200, état dans le corps), `/api/equipment`, `/api/latest`, `/api/series` (bucket 5m/1h/1d auto),
-`/api/gaps`, `/api/energy`, `/api/energy/tariff-split` (404 si `OFF_PEAK_HOURS=off`), `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
+`/api/gaps`, `/api/energy`, `/api/energy/tariff-split` (404 si `OFF_PEAK_HOURS=off`), `/api/energy/power?day=` (puissance moyenne par intervalle de relevé, dérivée des compteurs 57/59 : `PowerDeriver`, rien n'est stocké ; intervalle > 1 h avec énergie = `watts` nul, jamais réparti), `/api/cycles`, `/api/schedule` (programme hebdo de `room_1`, 404 tant qu'il n'est pas reçu). Instants en secondes epoch UTC ; libellés et unités viennent de `MetricCatalog`, le front ne voit
 jamais de `capabilityId`. Repli SPA pour toute route non-API.
 
 ## Frontend (`frontend/src`)

@@ -10,6 +10,12 @@ import { cssVar, styleFor } from "../lib/palette";
 export interface LineChartProps {
   series: Series[];
   height?: number;
+  /** Valeur maintenue jusqu'au point suivant (puissance moyenne d'un intervalle) au lieu d'une ligne brisée. */
+  step?: boolean;
+  /** Axe du temps fixé (journée entière) au lieu de l'étendue des points. */
+  xRange?: [number, number];
+  /** Axe Y ancré à zéro. */
+  yFromZero?: boolean;
 }
 
 /** Aligne les séries sur un axe X commun (débuts de bucket) ; ``null`` = pas de valeur. */
@@ -114,7 +120,13 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 }
 
-export function LineChart({ series, height = 260 }: LineChartProps) {
+export function LineChart({
+  series,
+  height = 260,
+  step = false,
+  xRange,
+  yFromZero = false,
+}: LineChartProps) {
   const ref = useRef<HTMLDivElement>(null);
   const data = useMemo(() => alignSeries(series), [series]);
   const gaps = useMemo(() => mergeGaps(series), [series]);
@@ -137,7 +149,10 @@ export function LineChart({ series, height = 260 }: LineChartProps) {
           points: { size: 8, width: 2, fill: cssVar("--surface") },
           y: false,
         },
-        scales: { x: { time: true } },
+        scales: {
+          x: xRange ? { time: true, auto: false, range: () => xRange } : { time: true },
+          ...(yFromZero ? { y: { range: (_u: uPlot, _min: number, max: number): [number, number] => [0, max > 0 ? max * 1.1 : 1] } } : {}),
+        },
         axes: [
           {
             stroke: text3,
@@ -168,6 +183,7 @@ export function LineChart({ series, height = 260 }: LineChartProps) {
               width: 2,
               dash: st.dashed ? [5, 4] : undefined,
               spanGaps: false,
+              paths: step ? uPlot.paths.stepped?.({ align: 1 }) : undefined,
               points: { show: false },
               fill: series.length === 1 && !st.dashed ? `${color}1a` : undefined,
             } satisfies uPlot.Series;
@@ -195,7 +211,7 @@ export function LineChart({ series, height = 260 }: LineChartProps) {
       media.removeEventListener("change", rebuild);
       plot.destroy();
     };
-  }, [data, gaps, series, unit, height, empty]);
+  }, [data, gaps, series, unit, height, empty, step, xRange, yFromZero]);
 
   if (empty) {
     return (

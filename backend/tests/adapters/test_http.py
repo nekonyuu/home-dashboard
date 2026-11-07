@@ -31,9 +31,11 @@ from app.application.usecases.queries import (
     GetHealth,
     GetLatest,
     GetMetrics,
+    GetPower,
     GetSchedule,
     GetSeries,
     GetTariffSplit,
+    PowerSource,
 )
 from app.domain.model import Equipment, Gap, GapCause
 from app.domain.services import GapDetector, TimeWindow
@@ -111,6 +113,11 @@ class World:
             get_tariff_split=GetTariffSplit(
                 source=(DHW, COUNTER),
                 off_peak=[TimeWindow(98, 398), TimeWindow(848, 1028)],
+                measurements=self.measurements,
+                clock=self.clock,
+            ),
+            get_power=GetPower(
+                sources=[PowerSource("dhw", "Eau chaude", DHW, COUNTER)],
                 measurements=self.measurements,
                 clock=self.clock,
             ),
@@ -481,3 +488,18 @@ def test_tariff_split_not_configured(world, client):
         source=(DHW, COUNTER), off_peak=[], measurements=world.measurements, clock=world.clock
     )
     assert client.get("/api/energy/tariff-split").status_code == 404
+
+
+def test_energy_power(world, client):
+    t = paris(2026, 10, 18, 2).epoch
+    run(world.measurements.append([m(t, 1000, key=COUNTER), m(t + 600, 1600, key=COUNTER)]))
+    body = client.get("/api/energy/power", params={"day": "2026-10-18"}).json()
+    assert body["day"] == "2026-10-18" and body["from"] == paris(2026, 10, 18).epoch and body["to"] == NOW.epoch
+    assert body["series"] == [
+        {"key": "dhw", "label": "Eau chaude", "intervals": [{"start": t, "end": t + 600, "watts": 3600.0}]}
+    ]
+    assert client.get("/api/energy/power").json()["day"] == "2026-10-18"  # aujourd'hui par défaut
+    past = client.get("/api/energy/power", params={"day": "2026-10-17"}).json()
+    assert past["to"] == paris(2026, 10, 18).epoch and past["series"][0]["intervals"] == []
+    assert client.get("/api/energy/power", params={"day": "2026-10-19"}).status_code == 400
+    assert client.get("/api/energy/power", params={"day": "nope"}).status_code == 400

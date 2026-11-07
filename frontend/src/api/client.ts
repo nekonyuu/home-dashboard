@@ -1,4 +1,4 @@
-import type { BucketSize, Cycle, EnergyDay, Equipment, Gap, Health, Latest, Schedule, Series, TariffSplit } from "./types";
+import type { BucketSize, Cycle, EnergyDay, PowerDay, Equipment, Gap, Health, Latest, Schedule, Series, TariffSplit } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -36,5 +36,6 @@ export const api = {
   cycles: (from: number, to: number) => get<Cycle[]>("/api/cycles", { from, to }),
   energy: (from: string, to: string) => get<EnergyDay[]>("/api/energy", { from, to }),
   tariffSplit: (from: string, to: string) => get<TariffSplit>("/api/energy/tariff-split", { from, to }),
+  energyPower: (day: string) => get<PowerDay>("/api/energy/power", { day }),
   schedule: () => get<Schedule>("/api/schedule"),
 };

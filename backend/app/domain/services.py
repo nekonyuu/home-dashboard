@@ -505,3 +505,44 @@ class TariffSplitter:
             nxt = min(hi, t + edge * 60 - seconds)
             yield t, nxt, local
             t = nxt
+
+
+@dataclass(frozen=True, slots=True)
+class PowerInterval:
+    """Puissance moyenne entre deux relevés d'un compteur ; ``watts`` vide = énergie non répartie (jamais inventée)."""
+
+    start: int
+    end: int
+    watts: float | None
+
+
+class PowerDeriver:
+    """Dérive une puissance moyenne (W) des deltas d'un compteur cumulé en Wh.
+
+    Le compteur n'est enregistré qu'à ses changements : la puissance d'un intervalle est le delta entre deux relevés
+    consécutifs divisé par leur écart. Un intervalle plus long que ``max_interval`` qui porte de l'énergie n'est pas
+    réparti (on ne sait pas quand elle a été consommée) : ``watts`` reste vide. Un delta nul, lui, dit sans ambiguïté
+    que rien n'a été consommé (0 W). Un delta négatif (remise à zéro) est ignoré.
+    """
+
+    def __init__(self, max_interval: int = 3600) -> None:
+        self._max = max_interval
+
+    def derive(
+        self, readings: Sequence[Measurement], *, prior: Measurement | None, start: Instant, end: Instant
+    ) -> list[PowerInterval]:
+        points = sorted((m for m in readings if m.value.number is not None), key=lambda m: m.instant)
+        if prior is not None and prior.value.number is not None:
+            points.insert(0, prior)
+        out: list[PowerInterval] = []
+        for a, b in itertools.pairwise(points):
+            t0, t1 = a.instant.epoch, b.instant.epoch
+            delta = (b.value.number or 0.0) - (a.value.number or 0.0)
+            if t1 <= t0 or delta < 0:
+                continue
+            lo, hi = max(t0, start.epoch), min(t1, end.epoch)
+            if lo >= hi:
+                continue
+            assigned = t1 - t0 <= self._max or delta == 0
+            out.append(PowerInterval(lo, hi, round(delta * 3600 / (t1 - t0), 1) if assigned else None))
+        return out

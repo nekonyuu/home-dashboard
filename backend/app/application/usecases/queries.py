@@ -24,6 +24,8 @@ from app.domain.services import (
     PARIS,
     CycleDetector,
     GapDetector,
+    PowerDeriver,
+    PowerInterval,
     ScheduleState,
     SeriesAggregator,
     TariffSplit,
@@ -254,6 +256,48 @@ class GetTariffSplit:
         readings = await self._measurements.range(eq, key, start, Instant(end.epoch + 86400))
         prior = await self._measurements.last_recorded(eq, key, start)
         return TariffSplitter(self._off_peak).split(readings, prior=prior, start=start, end=end)
+
+
+@dataclass(frozen=True, slots=True)
+class PowerSource:
+    key: str
+    label: str
+    equipment: EquipmentId
+    metric: MetricKey
+
+
+@dataclass(frozen=True, slots=True)
+class PowerSeries:
+    source: PowerSource
+    intervals: list[PowerInterval]
+
+
+class GetPower:
+    """Puissance moyenne par intervalle de relevé sur une journée, dérivée des compteurs cumulés (jamais stockée)."""
+
+    def __init__(self, *, sources: list[PowerSource], measurements: MeasurementRepository, clock: Clock) -> None:
+        self._sources = sources
+        self._measurements = measurements
+        self._clock = clock
+
+    async def run(self, day: date) -> tuple[Instant, Instant, list[PowerSeries]]:
+        """Renvoie ``(début, fin, séries)`` ; la fin est plafonnée à l'instant présent."""
+        nxt = day + timedelta(days=1)
+        start = Instant(int(datetime(day.year, day.month, day.day, tzinfo=PARIS).timestamp()))
+        end = Instant(
+            min(int(datetime(nxt.year, nxt.month, nxt.day, tzinfo=PARIS).timestamp()), self._clock.now().epoch)
+        )
+        out = []
+        for source in self._sources:
+            if end <= start:
+                out.append(PowerSeries(source, []))
+                continue
+            readings = await self._measurements.range(
+                source.equipment, source.metric, start, Instant(end.epoch + 86400)
+            )
+            prior = await self._measurements.last_recorded(source.equipment, source.metric, start)
+            out.append(PowerSeries(source, PowerDeriver().derive(readings, prior=prior, start=start, end=end)))
+        return start, end, out
 
 
 @dataclass(frozen=True, slots=True)
