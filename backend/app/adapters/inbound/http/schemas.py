@@ -135,6 +135,27 @@ class TariffSplitOut(BaseModel):
     hourly: list[TariffHourOut]
 
 
+class PowerIntervalOut(BaseModel):
+    start: int
+    end: int
+    watts: float | None
+
+
+class PowerSeriesOut(BaseModel):
+    key: str
+    label: str
+    intervals: list[PowerIntervalOut]
+
+
+class PowerOut(BaseModel):
+    day: str
+    from_: int = Field(alias="from")
+    to: int
+    series: list[PowerSeriesOut]
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class CycleOut(BaseModel):
     start: int
     end: int | None

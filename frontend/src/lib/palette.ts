@@ -22,6 +22,9 @@ const STYLES: Record<string, SeriesStyle> = {
   dhw_charge_setpoint: { color: "--series-2", dashed: true },
   energy_heating_cumulative: { color: "--series-1" },
   energy_dhw_cumulative: { color: "--series-2" },
+  // puissance moyenne dérivée des compteurs : mêmes teintes que les usages d'énergie
+  power_heating: { color: "--series-1" },
+  power_dhw: { color: "--series-2" },
   wifi_rssi: { color: "--series-7" },
   // maison (LG ThinQ) : consignes en pointillé, activité des lavages en trait plein
   fridge_setpoint: { color: "--series-1", dashed: true },

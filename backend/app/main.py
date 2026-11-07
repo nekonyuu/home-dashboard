@@ -48,9 +48,11 @@ from app.application.usecases.queries import (
     GetHealth,
     GetLatest,
     GetMetrics,
+    GetPower,
     GetSchedule,
     GetSeries,
     GetTariffSplit,
+    PowerSource,
 )
 from app.config import ConfigError, Settings
 from app.domain import events
@@ -90,6 +92,7 @@ class Container:
     get_energy: GetEnergy
     get_cycles: GetCycles
     get_tariff_split: GetTariffSplit
+    get_power: GetPower
     get_schedule: GetSchedule
     get_health: GetHealth
     get_metrics: GetMetrics
@@ -207,6 +210,14 @@ async def build(settings: Settings) -> Container:
             measurements=measurements,
             clock=clock,
         ),
+        get_power=GetPower(
+            sources=[
+                PowerSource("heating", "Chauffage", EquipmentId("heat_pump"), MetricKey("energy_heating_cumulative")),
+                PowerSource("dhw", "Eau chaude", EquipmentId("heat_pump"), MetricKey("energy_dhw_cumulative")),
+            ],
+            measurements=measurements,
+            clock=clock,
+        ),
         get_metrics=GetMetrics(sources),
         get_schedule=GetSchedule(measurements, clock, EquipmentId("room_1")),
         clock=clock,
@@ -253,6 +264,7 @@ def create_app(settings: Settings | None = None, *, start_scheduler: bool = True
             get_energy=container.get_energy,
             get_cycles=container.get_cycles,
             get_tariff_split=container.get_tariff_split,
+            get_power=container.get_power,
             get_metrics=container.get_metrics,
             get_schedule=container.get_schedule,
             scheduler_state=lambda: container.scheduler.state,

@@ -102,6 +102,13 @@ export interface TariffSplit {
   hourly: { hour: number; off_peak_kwh: number; peak_kwh: number }[];
 }
 
+export interface PowerDay {
+  day: string;
+  from: number;
+  to: number;
+  series: { key: string; label: string; intervals: { start: number; end: number; watts: number | null }[] }[];
+}
+
 export interface Cycle {
   start: number;
   end: number | null;

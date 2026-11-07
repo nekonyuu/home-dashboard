@@ -43,6 +43,9 @@ export const useEnergy = (from: string, to: string) =>
 export const useTariffSplit = (from: string, to: string) =>
   useQuery({ queryKey: ["tariff-split", from, to], queryFn: () => api.tariffSplit(from, to), retry: false });
 
+export const usePower = (day: string) =>
+  useQuery({ queryKey: ["power", day], queryFn: () => api.energyPower(day), placeholderData: keepPreviousData });
+
 export const useCycles = (from: number, to: number) =>
   useQuery({ queryKey: ["cycles", from, to], queryFn: () => api.cycles(from, to), placeholderData: keepPreviousData });
 

@@ -23,6 +23,9 @@ from app.adapters.inbound.http.schemas import (
     OverrideOut,
     PointOut,
     PollerOut,
+    PowerIntervalOut,
+    PowerOut,
+    PowerSeriesOut,
     ScheduleDayOut,
     ScheduleOut,
     SeriesOut,
@@ -314,6 +317,29 @@ async def tariff_split(
         hourly=[
             TariffHourOut(hour=h, off_peak_kwh=kwh(split.hourly_off_peak_wh[h]), peak_kwh=kwh(split.hourly_peak_wh[h]))
             for h in range(24)
+        ],
+    )
+
+
+@router.get("/energy/power", response_model=PowerOut, response_model_by_alias=True)
+async def energy_power(a: Api, day: str | None = None) -> PowerOut:
+    """Puissance moyenne entre deux relevés des compteurs cumulés, sur une journée (heure de Paris)."""
+    today = datetime.fromtimestamp(a.clock.now().epoch, PARIS).date()
+    wanted = parse_day(day, "day", today)
+    if wanted > today:
+        raise bad_request("« day » ne peut pas être dans le futur")
+    start, end, series = await a.get_power.run(wanted)
+    return PowerOut(
+        day=wanted.isoformat(),
+        **{"from": start.epoch},
+        to=end.epoch,
+        series=[
+            PowerSeriesOut(
+                key=s.source.key,
+                label=s.source.label,
+                intervals=[PowerIntervalOut(start=i.start, end=i.end, watts=i.watts) for i in s.intervals],
+            )
+            for s in series
         ],
     )
 
