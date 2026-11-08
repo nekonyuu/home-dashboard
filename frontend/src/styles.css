@@ -702,6 +702,10 @@ select {
 .chart-box {
   position: relative;
   width: 100%;
+  /* appui long = visée : pas de sélection de texte ni de loupe/menu système */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .chart-empty {
   display: grid;

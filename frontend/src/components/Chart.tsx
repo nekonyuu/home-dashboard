@@ -4,6 +4,7 @@ import "uplot/dist/uPlot.min.css";
 
 import type { Gap, Series } from "../api/types";
 import { formatAxisTime, formatDateTime, formatNumber, formatTick } from "../lib/format";
+import { attachLongPress } from "../lib/longPress";
 import { cssVar, styleFor } from "../lib/palette";
 
 /** Un graphique = une unité = un axe Y (jamais de double axe). */
@@ -78,6 +79,7 @@ function gapsPlugin(gaps: Gap[]): uPlot.Plugin {
 /** Infobulle HTML : heure + valeur de chaque série au point survolé. */
 function tooltipPlugin(series: Series[], gaps: Gap[]): uPlot.Plugin {
   let tip: HTMLDivElement;
+  let detach: (() => void) | undefined;
   return {
     hooks: {
       init: (u) => {
@@ -86,7 +88,13 @@ function tooltipPlugin(series: Series[], gaps: Gap[]): uPlot.Plugin {
         tip.style.display = "none";
         u.over.appendChild(tip);
         u.over.addEventListener("mouseleave", () => (tip.style.display = "none"));
+        // tactile : appui long puis glisser pour viser un point précis
+        detach = attachLongPress(u.over, {
+          onScrub: (x, y) => u.setCursor({ left: Math.min(Math.max(x, 0), u.over.clientWidth), top: y }),
+          onClear: () => u.setCursor({ left: -10, top: -10 }),
+        });
       },
+      destroy: () => detach?.(),
       setCursor: (u) => {
         const idx = u.cursor.idx;
         if (idx == null || u.cursor.left == null || u.cursor.left < 0) {
