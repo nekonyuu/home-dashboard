@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { formatNumber } from "../lib/format";
+import { attachLongPress } from "../lib/longPress";
 
 export interface ColumnSegment {
   key: string;
@@ -41,12 +42,29 @@ export function ColumnChart({ columns, unit, height = 240 }: { columns: Column[]
     return () => ro.disconnect();
   }, []);
 
+  // tactile : appui long puis glisser d'une colonne à l'autre
+  const svg = useRef<SVGSVGElement>(null);
+  const geom = useRef({ slot: 0, n: 0 });
+  useEffect(() => {
+    const el = svg.current;
+    if (!el) return;
+    return attachLongPress(el as unknown as HTMLElement, {
+      onScrub: (x) => {
+        const { slot, n } = geom.current;
+        if (n === 0 || slot <= 0) return;
+        setHover(Math.min(n - 1, Math.max(0, Math.floor((x - PAD.left) / slot))));
+      },
+      onClear: () => setHover(null),
+    });
+  }, []);
+
   const totals = columns.map((c) => c.segments.reduce((a, s) => a + s.value, 0));
   const max = niceMax(Math.max(0, ...totals));
   const plotW = Math.max(width - PAD.left - PAD.right, 10);
   const plotH = height - PAD.top - PAD.bottom;
   const slot = plotW / Math.max(columns.length, 1);
-  const barW = Math.min(24, Math.max(slot * 0.62, 3));
+  geom.current = { slot, n: columns.length };
+  const barW =Math.min(24, Math.max(slot * 0.62, 3));
   const y = (v: number) => PAD.top + plotH - (v / max) * plotH;
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * max);
   const labelEvery = Math.ceil(columns.length / Math.max(Math.floor(plotW / 46), 1));
@@ -56,7 +74,7 @@ export function ColumnChart({ columns, unit, height = 240 }: { columns: Column[]
 
   return (
     <div ref={wrap} className="chart-box">
-      <svg className="columns" width={width} height={height} role="img" aria-label="Consommation journalière">
+      <svg ref={svg} className="columns" width={width} height={height} role="img" aria-label="Consommation journalière">
         {ticks.map((t) => (
           <g key={t}>
             <line className="grid-line" x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} />
