@@ -11,6 +11,7 @@ import { History } from "./pages/History";
 import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { Overview } from "./pages/Overview";
+import { Tablet } from "./pages/Tablet";
 
 export function makeQueryClient() {
   return new QueryClient({
@@ -31,6 +32,7 @@ export const routes = [
     element: <Layout />,
     children: [
       { index: true, element: <Overview /> },
+      { path: "tablette", element: <Tablet /> },
       { path: "ecs", element: <Dhw /> },
       { path: "chauffage", element: <Heating /> },
       { path: "appareils", element: <Home /> },

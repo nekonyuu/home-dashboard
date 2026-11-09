@@ -81,6 +81,7 @@ jamais de `capabilityId`. Repli SPA pour toute route non-API.
   `/ecs` = `Dhw`) · Électroménager (`/appareils/:id` = `Appliance`, liste `/appareils` = `Home`) · Vues (`History`, `Energy`
   avec bascule par usage / par tarif, mémorisée). Mobile : onglets Maison, Chauffage, ECS, Appareils, Historique, Énergie ;
   puces défilantes pour passer d'un appareil à l'autre. `/maison` redirige vers `/`.
+  `/tablette` (`pages/Tablet`) : mode tuiles plein écran pour tablette murale (sans barre latérale ni onglets, gros chiffres, tuiles cliquables vers le détail) ; énergie = dernier jour publié (`lib/tablet.ts`).
   Un appareil hors ligne s'affiche en gris, jamais en rouge ; le bandeau d'état ne concerne que l'installation Atlantic.
 - Règles de design (skill dataviz) :
   - un graphique = une unité = un axe Y, jamais de double axe ; plusieurs unités → petits multiples ;

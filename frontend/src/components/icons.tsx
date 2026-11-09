@@ -169,3 +169,10 @@ export const IconDoor = (p: P) => (
     <path d="M13.5 12v.1" />
   </Svg>
 );
+
+export const IconTablet = (p: P) => (
+  <Svg {...p}>
+    <rect x="4.5" y="3" width="15" height="18" rx="2.5" />
+    <path d="M10.5 18h3" />
+  </Svg>
+);

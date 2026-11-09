@@ -1252,3 +1252,127 @@ select {
   font-size: 1.15rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Mode tablette (/tablette) : tuiles plein écran, gros chiffres, cibles tactiles ---------- */
+.shell.kiosk-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+.kiosk-mode .sidebar,
+.kiosk-mode .tabbar {
+  display: none;
+}
+.kiosk-mode .mobile-brand {
+  display: flex !important;
+  max-width: 1600px;
+  margin: 0 auto 10px;
+}
+.kiosk-mode .main {
+  max-width: none;
+  padding: 18px 28px 28px;
+}
+.kiosk {
+  display: grid;
+  gap: 18px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.kiosk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.kiosk-clock {
+  font-size: 64px;
+  line-height: 1;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.kiosk-date {
+  margin-top: 6px;
+  font-size: 18px;
+  color: var(--text-2);
+  text-transform: capitalize;
+}
+.kiosk-head-status {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kiosk-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+.kiosk-tile {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 190px;
+  padding: 20px 24px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.12s;
+}
+.kiosk-tile:active {
+  background: var(--surface-2);
+}
+.kiosk-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.kiosk-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 560;
+  color: var(--text-2);
+}
+.kiosk-label svg {
+  color: var(--text-3);
+}
+.kiosk-status {
+  margin-left: auto;
+}
+.kiosk-value {
+  font-size: 72px;
+  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.kiosk-value .unit {
+  font-size: 0.4em;
+  font-weight: 550;
+  color: var(--text-2);
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+.kiosk-headline {
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+.kiosk-sub {
+  font-size: 16px;
+  color: var(--text-2);
+}
+@media (max-width: 760px) {
+  .kiosk-mode .main {
+    padding: 14px 14px 24px;
+  }
+  .kiosk-clock {
+    font-size: 48px;
+  }
+  .kiosk-value {
+    font-size: 56px;
+  }
+  .kiosk-tile {
+    min-height: 0;
+  }
+}

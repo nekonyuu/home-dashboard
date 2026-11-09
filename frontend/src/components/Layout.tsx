@@ -1,12 +1,12 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useMatch } from "react-router-dom";
 
 import { useEnergy, useEquipment, useHealth } from "../api/hooks";
 import { formatAge } from "../lib/format";
 import { homeAppliances } from "../lib/home";
 import { isoDay } from "../lib/range";
 import { ApplianceIcon } from "./home";
-import { IconAppliances, IconAuto, IconBolt, IconChart, IconDrop, IconFlame, IconHome, IconMoon, IconSun } from "./icons";
+import { IconAppliances, IconAuto, IconBolt, IconChart, IconDrop, IconFlame, IconHome, IconMoon, IconSun, IconTablet } from "./icons";
 import { StatusBanner } from "./StatusBanner";
 import { Status } from "./ui";
 
@@ -68,14 +68,17 @@ function useNav() {
     short: a.label,
     icon: <ApplianceIcon kind={a.kind} size={18} />,
   }));
-  const views: NavItem[] = [{ to: "/historique", label: "Historique", short: "Historique", icon: <IconChart /> }];
+  const views: NavItem[] = [
+    { to: "/historique", label: "Historique", short: "Historique", icon: <IconChart /> },
+  ];
   if ((energy.data?.length ?? 0) > 0) views.push({ to: "/energie", label: "Énergie", short: "Énergie", icon: <IconBolt /> });
+  views.push({ to: "/tablette", label: "Tablette", short: "Tablette", icon: <IconTablet /> });
   // mobile : un onglet par ensemble ; les appareils partagent l'onglet « Appareils » (puces dans la page)
   const tabs: NavItem[] = [
     home,
     ...heatPump,
     ...(appliances.length ? [{ to: "/appareils", label: "Appareils", short: "Appareils", icon: <IconAppliances /> }] : []),
-    ...views,
+    ...views.filter((v) => v.to !== "/tablette"),
   ];
   return { home, heatPump, devices, views, tabs };
 }
@@ -107,11 +110,12 @@ function CollectStatus() {
 export function Layout() {
   const [theme, nextTheme] = useTheme();
   const nav = useNav();
+  const kiosk = useMatch("/tablette") !== null;
   const health = useHealth();
   const last = health.data?.poller.last_success;
 
   return (
-    <div className="shell">
+    <div className={`shell${kiosk ? " kiosk-mode" : ""}`}>
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">
