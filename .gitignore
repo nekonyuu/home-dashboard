@@ -15,3 +15,5 @@ frontend/dist/
 backend/discover_magellan_output.json
 backend/backup/
 backend/discover_thinq_output.json
+backend/discover_netatmo_output.json
+backend/.netatmo_refresh_token
