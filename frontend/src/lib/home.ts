@@ -73,6 +73,11 @@ export const RESERVED = 9;
  * Minutes avant le déclenchement d'un départ différé. Le lave-vaisselle donne directement le délai avant départ ;
  * le lave-linge donne le délai avant la **fin** : le départ est ce délai moins la durée du cycle.
  */
+export function delayReadAt(get: (m: string) => Latest | undefined): number | undefined {
+  const start = get("delay_start_minutes");
+  return (num(start) !== null ? start : get("delay_end_minutes"))?.polled_at;
+}
+
 export function delayedStartMinutes(get: (m: string) => Latest | undefined, total: number | null): number | null {
   const start = num(get("delay_start_minutes"));
   if (start !== null) return start;
