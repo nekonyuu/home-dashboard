@@ -3,7 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 
 import type { Equipment, Latest } from "../api/types";
 import { formatAge } from "../lib/format";
-import { cyclePhase, cycleProgress, delayedStartMinutes, formatEndTime, formatMinutes, num, PHASE_TONE, RESERVED, type CyclePhase } from "../lib/home";
+import { cyclePhase, cycleProgress, delayedStartMinutes, delayReadAt, formatEndTime, formatMinutes, num, PHASE_TONE, RESERVED, type CyclePhase } from "../lib/home";
 import { IconAppliances, IconDishwasher, IconFridge, IconWasher } from "./icons";
 import { Status, type Tone } from "./ui";
 
@@ -63,7 +63,8 @@ export function washerSummary(e: Equipment, get: (m: string) => Latest | undefin
       status: label,
       headline: `${formatMinutes(remaining)} restantes`,
       progress: cycleProgress(remaining, total),
-      detail: `Fin vers ${formatEndTime(state.polled_at, remaining)}`,
+      // Base = lecture du temps restant lui-même : l'état « en cours » est stocké une seule fois (au changement).
+      detail: `Fin vers ${formatEndTime(get("remaining_minutes")?.polled_at ?? state.polled_at, remaining)}`,
     };
   }
   if (state?.value === RESERVED) {
@@ -74,7 +75,7 @@ export function washerSummary(e: Equipment, get: (m: string) => Latest | undefin
         status: label,
         headline: wait > 0 ? `Départ dans ${formatMinutes(wait)}` : "Départ imminent",
         progress: null,
-        detail: `Démarrage vers ${formatEndTime(state.polled_at, wait)}`,
+        detail: `Démarrage vers ${formatEndTime(delayReadAt(get) ?? state.polled_at, wait)}`,
       };
     }
     return { tone: "info", status: label, headline: label, progress: null, detail: null };
